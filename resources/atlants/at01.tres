@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="AtlantDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/atlant_definition.gd" id="1_ie3ub"]
+[ext_resource type="PackedScene" path="res://scenes/atlants/at01.tscn" id="2_r1x7l"]
+
+[resource]
+script = ExtResource("1_ie3ub")
+id = &"at01"
+display_name = "АТ-01 «ГОРИЗОНТ»"
+class_tag = &"starter"
+mass_tonnes = 92.0
+base_stats = Dictionary[StringName, float]({
+&"arm_reach": 3.37,
+&"physical_height": 10.1,
+&"walk_speed": 2.8
+})
+visual_scene = ExtResource("2_r1x7l")
+compatible_slots = Array[StringName]([&"left_arm", &"right_arm", &"back_mount"])
+starter_atlant = true

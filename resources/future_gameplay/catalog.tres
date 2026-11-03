@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ContentCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/atlant_definition.gd" id="1_3ejaw"]
+[ext_resource type="Resource" path="res://resources/atlants/at01.tres" id="2_cmkjg"]
+[ext_resource type="Script" path="res://scripts/data/mission_definition.gd" id="3_p5k4t"]
+[ext_resource type="Script" path="res://scripts/data/module_definition.gd" id="4_ei8st"]
+[ext_resource type="Script" path="res://scripts/data/content_catalog.gd" id="5_q4obw"]
+[ext_resource type="Script" path="res://scripts/data/weapon_definition.gd" id="6_s3lxc"]
+
+[resource]
+script = ExtResource("5_q4obw")
+atlants = Array[ExtResource("1_3ejaw")]([ExtResource("2_cmkjg")])

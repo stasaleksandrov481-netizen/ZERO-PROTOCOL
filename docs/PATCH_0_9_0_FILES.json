@@ -1,0 +1,263 @@
+{
+  "version": "0.9.0-interface-pass",
+  "base_version": "0.8.0-first-expedition",
+  "godot": "4.7.2",
+  "root": "project.godot directory",
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "84788e328185007c17044b723eda6d5f0d39c9e114cf6f0391358ab7b8f0e03b",
+      "bytes": 5625
+    },
+    {
+      "path": "README.md",
+      "sha256": "e92126bec52805d9438d2929913744c9d4636414820e732f2c3d9d47a7f11139",
+      "bytes": 6985
+    },
+    {
+      "path": "assets/ui/radio_personnel.png",
+      "sha256": "2fba376b0dbdb1c86ffbff8fefc60d03239f0f734561ffbbb18bdef42c7e4dad",
+      "bytes": 2324621
+    },
+    {
+      "path": "assets/ui/radio_personnel.png.import",
+      "sha256": "e9a7d45ad81ed6362c16155169f038ae40e22c4ce0db7d13ddf6637bd28ac69a",
+      "bytes": 959
+    },
+    {
+      "path": "docs/ASSET_SOURCES.md",
+      "sha256": "175c5beeb64568bd29cbc95fbd3fa27242c9d54664b0a6220e5d16538ec870ef",
+      "bytes": 9756
+    },
+    {
+      "path": "docs/PATCH_0_9_0.md",
+      "sha256": "3013db1e2fd12161ddfdf7eb6991be8905428fefa242c5813bb3c2cffc82e02c",
+      "bytes": 7532
+    },
+    {
+      "path": "docs/TEST_PLAN.md",
+      "sha256": "17a9cca701f3ffd24b87c6f0079a6a500eb59a547fea8640aa9e991bfdea2286",
+      "bytes": 5996
+    },
+    {
+      "path": "export_presets.cfg",
+      "sha256": "42ae983d2ad4942f32f6dd6dc2271e8708412a641198cc3d9501f006d6d4083b",
+      "bytes": 1037
+    },
+    {
+      "path": "project.godot",
+      "sha256": "44dff991965d2bc8c10d42114fb3924b6490a7c0ed1436771c79a8a9d789d698",
+      "bytes": 2066
+    },
+    {
+      "path": "scenes/gameplay/test_screen.tscn",
+      "sha256": "edff808c7763a315df59b31eab0799b782c40fc41a8f6a9bdc4e3f1a7387b0c9",
+      "bytes": 1083
+    },
+    {
+      "path": "scenes/menu/home_screen.tscn",
+      "sha256": "1acfd68d72b2ac62f5558be57f6174a2ad6ca2cc4758fedd09b6f128677847da",
+      "bytes": 266
+    },
+    {
+      "path": "scenes/screens/archive_screen.tscn",
+      "sha256": "22469bc7151fff6ed9e1203e194b664b85f00a2ea1347a5fa9174b01e0cb52cd",
+      "bytes": 272
+    },
+    {
+      "path": "scenes/screens/hangar_screen.tscn",
+      "sha256": "aacdab8d599166faa7ecb08d99b3f0d876f75bfa60e79ec5671ce1d5510a59dc",
+      "bytes": 270
+    },
+    {
+      "path": "scenes/screens/operations_screen.tscn",
+      "sha256": "d672c7f0bfa2fe21f7973f260b773c1818064b6d32bc6d2741d7c02391961418",
+      "bytes": 278
+    },
+    {
+      "path": "scenes/settings/settings_screen.tscn",
+      "sha256": "82cebf8615b8f805f81d3163baa8dd7c2435a86bd0605874285f865bc04bf50a",
+      "bytes": 257
+    },
+    {
+      "path": "scripts/autoload/audio_manager.gd",
+      "sha256": "0536a7915b154dda8167669bf77adbb7d642c651c7be94c1b743c7653f40762d",
+      "bytes": 6138
+    },
+    {
+      "path": "scripts/autoload/expedition_manager.gd",
+      "sha256": "bacaff4da6a14dd60d749675aa2cdf63944172b232432493f175e9cb9fd7e052",
+      "bytes": 8886
+    },
+    {
+      "path": "scripts/autoload/navigation_manager.gd",
+      "sha256": "2d74ca5395f4d0482d3c9180f2d4b225aeaec10832b95d9fb495f80d27f9e6a0",
+      "bytes": 7975
+    },
+    {
+      "path": "scripts/gameplay/expedition_screen.gd",
+      "sha256": "26e6d18ab886f9a858841d053ef4607b0f05a37a3c5f9627220105cb980c220c",
+      "bytes": 18903
+    },
+    {
+      "path": "scripts/gameplay/test_screen.gd",
+      "sha256": "fc81fbe682b9a5976005d61b97e90d68c9c0107071b61d08c48a740f9d990647",
+      "bytes": 15864
+    },
+    {
+      "path": "scripts/gameplay/virtual_hand_stick.gd",
+      "sha256": "c9ee9c0c9fbb8ccfde1254ae008a07102c4c54d4b57033de92a5727f3892b048",
+      "bytes": 3393
+    },
+    {
+      "path": "scripts/systems/radio_dispatch.gd",
+      "sha256": "498f7aa999f489cc2bbc143b84b813703a7810dcf51c234151cac922be905775",
+      "bytes": 2724
+    },
+    {
+      "path": "scripts/systems/radio_dispatch.gd.uid",
+      "sha256": "4d6f00ad1d021f69442a9f22f025ed40b184db2d79c5b5e0f146472d5abf5756",
+      "bytes": 19
+    },
+    {
+      "path": "scripts/ui/app_root.gd",
+      "sha256": "fb7e4bdc6d6bf50da78b0ed522b09cfbd4dead4d8c67ee86948f214621805955",
+      "bytes": 3220
+    },
+    {
+      "path": "scripts/ui/campaign_map.gd",
+      "sha256": "1919e316a404d4cd3e95c5cf720078d93522ae3a854747224bc9dd1d3f08e80d",
+      "bytes": 12944
+    },
+    {
+      "path": "scripts/ui/combat_hud.gd",
+      "sha256": "f087c5bc7008566ce35191531e0d2ea1d7a2167b59554b5f5733cb3737de2cad",
+      "bytes": 16793
+    },
+    {
+      "path": "scripts/ui/combat_hud.gd.uid",
+      "sha256": "46d7a9db104c5c316000295bd6ba0df11fb78cdf01bf6bf76fb2c3371566642e",
+      "bytes": 19
+    },
+    {
+      "path": "scripts/ui/console_screen.gd",
+      "sha256": "b6ab2a86be290d5cbdb3b4953f71b5ef7542fbba1e3de3643eb11f3c27fa56f9",
+      "bytes": 11443
+    },
+    {
+      "path": "scripts/ui/console_screen.gd.uid",
+      "sha256": "2d18f881abc7b2e22de153e5887fdbeea0d826fdae5efc28d06a5c3e1025320b",
+      "bytes": 20
+    },
+    {
+      "path": "scripts/ui/hold_button.gd",
+      "sha256": "8260c593b893e63e71a6dde9c7c758e9e00654c0ab2b8534b6eb0ebf83dab962",
+      "bytes": 1363
+    },
+    {
+      "path": "scripts/ui/hold_button.gd.uid",
+      "sha256": "ed7c2de76b1fac28fd7b70853fb1ecdb4d6746dbca1e749a011dc357b9ddac60",
+      "bytes": 20
+    },
+    {
+      "path": "scripts/ui/home_screen.gd",
+      "sha256": "e482ecf6910e5a4dbe4d913c1065f1e6265bee2ceaa3028ebfa9ef9956f48725",
+      "bytes": 6183
+    },
+    {
+      "path": "scripts/ui/radio_widget.gd",
+      "sha256": "0d1e6a22b536c054fca50aa726de6bbd2e951a10744ab7353a107d470830d966",
+      "bytes": 6667
+    },
+    {
+      "path": "scripts/ui/radio_widget.gd.uid",
+      "sha256": "efb8fd76c60c81d6986cebf6a76ef99db210d09614648ed520824d1fa07539aa",
+      "bytes": 20
+    },
+    {
+      "path": "scripts/ui/rift_ui.gd",
+      "sha256": "8fc396db46e651166fcd90b0a2a5b5229fcaaee4eacb44133ba3d7e354a87c92",
+      "bytes": 5688
+    },
+    {
+      "path": "scripts/ui/settings_screen.gd",
+      "sha256": "7d261d60bfe54f05953c4f6409e0663e22d79418d568960e1cc3990ef0a03c61",
+      "bytes": 4583
+    },
+    {
+      "path": "scripts/ui/settings_tab.gd",
+      "sha256": "67af8ba39952c46c7ef6c92a5ebdb186a20ba39b90761baac1d3b63fdd14439e",
+      "bytes": 3832
+    },
+    {
+      "path": "scripts/ui/ui_button.gd",
+      "sha256": "8bd9d277e55b306800432e7e4e841eeaabfc5660ea2663dbf2a794b8f8df88f8",
+      "bytes": 1792
+    },
+    {
+      "path": "scripts/ui/ui_button.gd.uid",
+      "sha256": "1fde61b784264d5b8fe4c7fad9302f9bd855547122306e51b3734fd70b3b033d",
+      "bytes": 20
+    },
+    {
+      "path": "scripts/ui/ui_glyph.gd",
+      "sha256": "0e1da1b5bbb20bc50ba3e97ba3ca61c00e4421d1d3ee2bdddff10c3c7b367c28",
+      "bytes": 2268
+    },
+    {
+      "path": "scripts/ui/ui_glyph.gd.uid",
+      "sha256": "b73e622ac58ebb94a3116e07222e8b8d48abb4ea89a0066ffb0439a4a1cc8a26",
+      "bytes": 19
+    },
+    {
+      "path": "scripts/ui/ui_surface.gd",
+      "sha256": "c19edb33dad29ea24490808e90af266c68970ef745c88b099d3fb666b595213a",
+      "bytes": 802
+    },
+    {
+      "path": "scripts/ui/ui_surface.gd.uid",
+      "sha256": "c8dc6692f48a6e39a9d1a2f888eab06e72b60e1da918486a84432d97ea8830f0",
+      "bytes": 20
+    },
+    {
+      "path": "tests/README.md",
+      "sha256": "f59e414ba4141ea06221cd1eb077c84a321f89d2920bdbc1d7741a28d19c7ac8",
+      "bytes": 6184
+    },
+    {
+      "path": "tests/capture_ui_09.gd",
+      "sha256": "fcb22fdfe8ca1dee8abb51459c412ae0069c992d65c569cbb0b434803498299a",
+      "bytes": 1875
+    },
+    {
+      "path": "tests/capture_ui_09.gd.uid",
+      "sha256": "b4c27ef8f090c693e8ed738f313a904a4f460b2fe0c1aa3e032108bf3482feee",
+      "bytes": 20
+    },
+    {
+      "path": "tests/capture_ui_09.tscn",
+      "sha256": "153c283680e76b3a67b2889c5244e6be43bb60a679f358b45d96ddd2309bab05",
+      "bytes": 167
+    },
+    {
+      "path": "tests/test_runner.gd",
+      "sha256": "e965551150ffa1dad7ad6368f0452276dc7af4c3fdafa4cbcd4cf922a2c6b4ea",
+      "bytes": 9970
+    },
+    {
+      "path": "tests/ui_09_tests.gd",
+      "sha256": "0043a1abe4da1d32c96fb54becae6dee662c1125260b6e62a33b3a52e0939c07",
+      "bytes": 9111
+    },
+    {
+      "path": "tests/ui_09_tests.gd.uid",
+      "sha256": "78580128c5c2e0e57d6b2e44bf05cfefbb35cb611241c1e5b9151ef20a6cffa7",
+      "bytes": 20
+    },
+    {
+      "path": "tests/ui_09_tests.tscn",
+      "sha256": "5633afd1592f50befc2393c97b2a45d79f7b32ecd6f7c88637a9fa5c7cfd1191",
+      "bytes": 165
+    }
+  ]
+}

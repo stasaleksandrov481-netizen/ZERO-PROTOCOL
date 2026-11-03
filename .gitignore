@@ -1,0 +1,7 @@
+.godot/
+.export/
+*.tmp
+*.log
+.DS_Store
+export/
+build/

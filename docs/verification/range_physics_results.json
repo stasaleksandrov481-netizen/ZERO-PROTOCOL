@@ -1,0 +1,17 @@
+{
+  "engine": "4.7.2-stable (official)",
+  "failures": [],
+  "metrics": {
+    "closest_frontal_yaw": 0.0107963267948951,
+    "foot_contacts": 6,
+    "idle_height": 6.26174831390381,
+    "impulse_displacement": 5.89223909378052,
+    "nodes_after_cycle": 55,
+    "nodes_before_cycle": 55,
+    "overload_events": 1,
+    "walk_right_displacement": 4.51260074228048,
+    "walk_right_speed": 2.52324509620667
+  },
+  "passed": 41,
+  "physical_android_tested": false
+}

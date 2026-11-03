@@ -1,0 +1,24 @@
+{
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "input": {
+    "passed": 6,
+    "failures": [],
+    "synthetic_touch": true,
+    "hardware_touch": false,
+    "confirmed_exit_saved": true
+  },
+  "recovery": {
+    "passed": 5,
+    "failures": [],
+    "intentional_parse_errors": true
+  },
+  "cross_process_persistence": {
+    "write": true,
+    "read": true
+  },
+  "android_export": {
+    "built": false,
+    "sdk_configured": false,
+    "physical_device": false
+  }
+}

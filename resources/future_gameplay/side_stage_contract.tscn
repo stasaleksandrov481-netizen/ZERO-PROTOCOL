@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[node name="SideStageContract" type="Node3D"]
+metadata/status = "Architecture reference only. No battle or physics is implemented."
+metadata/movement_plane = "XY; Z is depth"
+metadata/front_direction = "+Z points toward the camera; left/right turns interpolate through yaw=0"
+
+[node name="WorldRoot" type="Node3D" parent="."]
+
+[node name="Actors" type="Node3D" parent="."]
+
+[node name="CameraRig" type="Node3D" parent="."]
+
+[node name="SideCamera" type="Camera3D" parent="CameraRig"]
+position = Vector3(0, 4, 16)
+projection = 1
+size = 12.0
+current = true
+
+[node name="FutureHUD" type="CanvasLayer" parent="."]

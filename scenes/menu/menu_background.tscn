@@ -1,0 +1,41 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="Script" path="res://scripts/ui/menu_background.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/background/city_hangar.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/background/atlant_menu.png" id="3"]
+[ext_resource type="Texture2D" path="res://resources/configuration/pilot_sprite.tres" id="4"]
+
+[node name="MenuBackground" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="City" type="TextureRect" parent="."]
+z_index = -2
+mouse_filter = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="AtlantFrame" type="Control" parent="."]
+z_index = -1
+clip_contents = true
+mouse_filter = 2
+
+[node name="Atlant" type="TextureRect" parent="AtlantFrame"]
+modulate = Color(0.68,0.76,0.86,1)
+mouse_filter = 2
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Pilot" type="TextureRect" parent="."]
+z_index = 1
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+stretch_mode = 5

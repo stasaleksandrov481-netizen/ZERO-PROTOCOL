@@ -1,0 +1,10 @@
+{
+  "engine": "4.7.2-stable (official)",
+  "failures": [],
+  "node_count_after": 55,
+  "node_count_before": 55,
+  "passed": 100,
+  "static_memory_after": 53753517,
+  "static_memory_before": 53642349,
+  "static_memory_midpoint": 53762907
+}
