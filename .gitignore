@@ -5,3 +5,7 @@
 .DS_Store
 export/
 build/
+__pycache__/
+*.py[cod]
+.env
+.env.*
