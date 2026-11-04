@@ -8,11 +8,14 @@ const ARM_LOWER := 1.72*P
 const LEG_UPPER := 2.1*P
 const LEG_LOWER := 2.1*P
 const REST_Y := -6.35*P
-const WALK_SPEED := 2.8*P
+const WALK_SPEED := 2.45*P
+const SHOULDER_MIN := -3.02
+const SHOULDER_MAX := 1.65
 signal overload(point: Vector2,strength: float)
 signal impact(point: Vector2,strength: float,direction: Vector2,target: PhysicsBody2D)
 signal strike(point: Vector2,strength: float)
 signal footstep(strength: float)
+signal planted(point: Vector2,strength: float)
 @onready var core: Part = $Bodies/Core
 var parts: Dictionary = {}
 var initial_poses: Dictionary = {}
@@ -25,6 +28,7 @@ var world_aim: Array[bool] = [false,false]
 var hand_engaged: Array[bool] = [false,false]
 var arm_goals: Array[Vector2] = [Vector2.ZERO,Vector2.ZERO]
 var arm_speeds: Array[Vector2] = [Vector2.ZERO,Vector2.ZERO]
+var arm_commanded: Array[bool] = [false,false]
 var strike_cooldowns: Array[float] = [0.0,0.0]
 var hand_contacts: Array[bool] = [false,false]
 var last_impulses: Array[float] = [0.0,0.0]
@@ -35,6 +39,9 @@ var startup_error := ""
 var facing := 1.0 # Deliberately fixed. Turning awaits the user's new design.
 var gait := 0.0
 var walk_blend := 0.0
+var drive_axis := 0.0
+var step_times: Array[float] = [-10.0,-10.0]
+var physics_clock := 0.0
 var total_mass := 0.0
 var load_ratio := 0.0
 var last_torque := 0.0
@@ -78,19 +85,20 @@ func _physics_process(delta: float) -> void:
  if not core.position.is_finite() or core.position.y > 8*P:
   reset_stance()
   return
- var moving := absf(walk_axis) > .08
- walk_blend = move_toward(walk_blend,absf(walk_axis) if moving else 0.0,delta*3.2)
- gait += delta*3.4*walk_blend
+ physics_clock += delta
+ drive_axis = move_toward(drive_axis,walk_axis,delta*(1.15 if absf(walk_axis) > .08 else 1.8))
+ walk_blend = move_toward(walk_blend,absf(drive_axis),delta*2.2)
+ gait += delta*3.0*walk_blend
  last_torque = 0
  _drive(parts["Head"],core,core.rotation,60,16,parts["Head"].mass*90*P*P)
  if stabilized:
-  _drive(core,null,walk_axis*.055,130,24,core.mass*145*P*P)
+  _drive(core,null,drive_axis*.065,130,24,core.mass*145*P*P)
   var bob := absf(sin(gait))*.07*P*walk_blend
   var error := REST_Y-bob-core.position.y
   var support := _support()
   var force := total_mass*(error*36-core.linear_velocity.y*8)-total_mass*G*.48
   core.apply_central_force(Vector2(0,clampf(force,-total_mass*G*2.1,total_mass*G)*support))
-  var traction := clampf((walk_axis*WALK_SPEED-core.linear_velocity.x)*4.6,-9*P,9*P)*total_mass
+  var traction := clampf((drive_axis*WALK_SPEED-core.linear_velocity.x)*3.7,-4.5*P,4.5*P)*total_mass
   core.apply_central_force(Vector2(traction*support,0))
  for index in range(2):
   _leg(index)
@@ -123,7 +131,7 @@ func _leg(index: int) -> void:
   return
  var phase := gait+(PI if index == 0 else 0.0)
  var idle := .60 if index == 0 else -.60
- var x := lerpf(idle,sin(phase)*1.02*signf(walk_axis),walk_blend)
+ var x := lerpf(idle,sin(phase)*1.02*signf(drive_axis),walk_blend)
  var lift := maxf(0,cos(phase))*.82*walk_blend
  var hip := core.position+Vector2(.33 if index == 0 else -.33,1.7).rotated(core.rotation)*P
  var target := Vector2(core.position.x+x*P,(-.60-lift)*P)-hip
@@ -139,6 +147,11 @@ func _arm(index: int,delta: float) -> void:
  var shoulder := core.position+Vector2(.58 if index == 0 else -.62,-.83).rotated(core.rotation)*P
  var control: Vector2 = hand_input[index]
  var commanded := world_aim[index] or hand_engaged[index] or control.length() > .08
+ if arm_commanded[index] and not commanded:
+  # Cancel the command's stored motion, then brake the physical arm into its rest pose.
+  arm_goals[index] = Vector2(clampf(wrapf(up.rotation-core.rotation,-PI,PI),SHOULDER_MIN,SHOULDER_MAX),clampf(wrapf(low.rotation-up.rotation,-PI,PI),-2.65,-.04))
+  arm_speeds[index] = Vector2.ZERO
+ arm_commanded[index] = commanded
  var swing := sin(gait+(PI if index == 0 else 0.0))*1.45*walk_blend
  var target := Vector2((-.25 if index == 0 else .50)+swing,3.10-absf(swing)*.25)*P
  if world_aim[index]: target = hand_world[index]-shoulder
@@ -147,33 +160,36 @@ func _arm(index: int,delta: float) -> void:
   target = control*(ARM_UPPER+ARM_LOWER-4.0)
   if target.length() < .15*P: target = Vector2(.30,-.35)*P
  var angles := solve_chain(target,ARM_UPPER,ARM_LOWER,1)
- var desired_shoulder := angles.x-core.rotation
- desired_shoulder = arm_goals[index].x+wrapf(desired_shoulder-arm_goals[index].x,-PI,PI)
+ # The target and the measured joint angle must share one bounded coordinate domain.
+ # Unwrapping only the target used to wind it up by 2π and keep the motor spinning.
+ var desired_shoulder := clampf(wrapf(angles.x-core.rotation,-PI,PI),SHOULDER_MIN+.04,SHOULDER_MAX-.04)
  var requested := Vector2(desired_shoulder,
   clampf(wrapf(angles.y-angles.x,-PI,PI),-2.65,-.04))
  for axis in range(2):
   var error := requested[axis]-arm_goals[index][axis]
-  var max_speed := 4.4 if axis == 0 else 5.1
+  var max_speed := (3.0 if axis == 0 else 4.0) if commanded else (1.8 if axis == 0 else 2.5)
   var desired := clampf(error*6.0,-max_speed,max_speed)
-  arm_speeds[index][axis] = move_toward(arm_speeds[index][axis],desired,(10.0 if axis == 0 else 15.0)*delta)
+  arm_speeds[index][axis] = move_toward(arm_speeds[index][axis],desired,(6.0 if axis == 0 else 9.0)*delta)
   var step := arm_speeds[index][axis]*delta
   if signf(step) == signf(error) and absf(step) > absf(error): step = error;arm_speeds[index][axis] = 0
   arm_goals[index][axis] += step
+ arm_goals[index].x = clampf(arm_goals[index].x,SHOULDER_MIN,SHOULDER_MAX)
+ arm_goals[index].y = clampf(arm_goals[index].y,-2.65,-.04)
  var elbow := up.position+Vector2.DOWN.rotated(up.rotation)*ARM_UPPER*.5
  var gravity_shoulder := -G*(up.mass*(up.position.x-shoulder.x)+low.mass*(low.position.x-shoulder.x))
  var gravity_elbow := -G*low.mass*(low.position.x-elbow.x)
  var inertia_shoulder := up.inertia+up.mass*up.position.distance_squared_to(shoulder)+low.inertia+low.mass*low.position.distance_squared_to(shoulder)
  var inertia_elbow := low.inertia+low.mass*ARM_LOWER*ARM_LOWER*.25
- _motor(up,core,arm_goals[index].x,36,12,up.mass*110*P*P,gravity_shoulder,inertia_shoulder)
- _motor(low,up,arm_goals[index].y,48,14,low.mass*80*P*P,gravity_elbow,inertia_elbow)
+ _motor(up,core,arm_goals[index].x,32,15,up.mass*110*P*P,gravity_shoulder,inertia_shoulder)
+ _motor(low,up,arm_goals[index].y,44,17,low.mass*80*P*P,gravity_elbow,inertia_elbow)
  arm_load[index] = clampf(absf(requested.x-arm_goals[index].x)*.6+absf(arm_speeds[index].x)*.12,0,1)
  strike_cooldowns[index] = maxf(0,strike_cooldowns[index]-delta)
  var contact_hit := low.opponent_impulse
  var new_impact := not hand_contacts[index] or contact_hit > last_impulses[index]*1.8
  if contact_hit > 4*P and new_impact and strike_cooldowns[index] == 0:
   var strength := clampf(contact_hit/(50*P),.15,1)
-  strike.emit(low.global_position,strength)
-  if is_instance_valid(low.opponent_body): impact.emit(low.global_position,strength,low.linear_velocity.normalized(),low.opponent_body)
+  strike.emit(low.opponent_contact,strength)
+  if is_instance_valid(low.opponent_body): impact.emit(low.opponent_contact,strength,low.linear_velocity.normalized(),low.opponent_body)
   strike_cooldowns[index] = .24
  hand_contacts[index] = contact_hit > .3*P
  last_impulses[index] = contact_hit
@@ -197,7 +213,10 @@ func _contacts() -> void:
   var foot: Part = parts[prefix+"Foot"]
   var touching := foot.support_contacts > 0
   var was := left_contact if prefix == "Left" else right_contact
-  if touching and not was: footstep.emit(clampf(foot.contact_impulse/(30*P),.15,1))
+  var index := 0 if prefix == "Left" else 1
+  if touching and not was and physics_clock-step_times[index] > .40:
+   var strength := clampf(foot.contact_impulse/(30*P)+walk_blend*.32,.15,1)
+   step_times[index] = physics_clock;footstep.emit(strength);planted.emit(foot.global_position,strength)
   if prefix == "Left": left_contact = touching
   else: right_contact = touching
 func _reset_commands() -> void:
@@ -208,12 +227,13 @@ func _reset_commands() -> void:
   var low_pose: Transform2D = initial_poses[prefix+"Forearm"]
   arm_goals[index] = Vector2(up_pose.get_rotation(),low_pose.get_rotation()-up_pose.get_rotation())
   arm_speeds[index] = Vector2.ZERO;strike_cooldowns[index] = .35;hand_contacts[index] = false;last_impulses[index] = 0
+  arm_commanded[index] = false
 func reset_stance() -> void:
  for key: String in parts:
   parts[key].reset_pose = initial_poses[key]
   parts[key].reset_requested = true;parts[key].sleeping = false
  walk_axis = 0;hand_input.assign([Vector2.ZERO,Vector2.ZERO]);world_aim.assign([false,false]);hand_engaged.assign([false,false])
- gait = 0;walk_blend = 0;load_ratio = 0;overload_time = 0;spark_cooldown = 1
+ gait = 0;walk_blend = 0;drive_axis = 0;load_ratio = 0;overload_time = 0;spark_cooldown = 1;step_times.assign([-10.0,-10.0])
  previous_x = 0;reset_cooldown = 3
  _reset_commands()
 func set_enabled(value: bool) -> void:

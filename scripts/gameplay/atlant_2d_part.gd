@@ -61,6 +61,7 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
  support_contacts = 0
  contact_impulse = 0
  opponent_impulse = 0
+ opponent_body = null
  for index in range(state.get_contact_count()):
   var other := state.get_contact_collider_object(index)
   var impulse := state.get_contact_impulse(index).length()
@@ -69,6 +70,7 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
   if other is PhysicsBody2D and (other.collision_layer & 4) != 0 and impulse > opponent_impulse:
    opponent_body = other
    opponent_impulse = impulse
+   # Godot's "local" contact is already a point in global coordinates.
    opponent_contact = state.get_contact_local_position(index)
  state.angular_velocity = clampf(state.angular_velocity,-max_spin,max_spin)
  if state.linear_velocity.length() > 1700: state.linear_velocity = state.linear_velocity.limit_length(1700)

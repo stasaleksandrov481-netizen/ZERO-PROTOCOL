@@ -38,3 +38,10 @@ static func attach(body: Node2D,kind: String,length: float,far_side: bool,layer:
  elif kind == "head": scale_value = .43
  sprite.scale = Vector2.ONE*scale_value;sprite.modulate = Color(.70,.77,.83) if far_side else Color.WHITE
  visual.add_child(sprite);sprite.owner = body.owner
+ # Use the same cell, pivot, rotation and scale as the painted armor.
+ var cell_index: int = int(data[0].y)*4+int(data[0].x)
+ var silhouette: PackedVector2Array = PackedVector2Array(preload("res://scripts/models/collision_profiles.gd").ATLANT[cell_index])
+ var points := PackedVector2Array()
+ for point: Vector2 in silhouette: points.append(visual.position+((point-Vector2(data[1]))*scale_value).rotated(sprite.rotation))
+ var shape := ConvexPolygonShape2D.new();shape.points = points
+ var collision := body.get_node("Collision") as CollisionShape2D;collision.shape = shape

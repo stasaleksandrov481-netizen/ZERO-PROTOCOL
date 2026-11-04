@@ -8,11 +8,16 @@ func go(route: StringName) -> void: await NavigationManager.go(route);await fram
 func shot(name_value: String) -> void:
  await frames();await RenderingServer.frame_post_draw;get_viewport().get_texture().get_image().save_png(OUTPUT+name_value+".png");print("CAPTURE ",name_value)
 func move_actor(game: Control,x: float) -> void:
- var dx: float = x-game.robot.core.position.x
- for body in game.robot.parts.values(): body.position.x += dx
- if is_instance_valid(game.companion):
-  var cdx: float = x-380-game.companion.core.position.x
-  for body in game.companion.parts.values(): body.position.x += cdx
+ game._release_input()
+ for actor: Node2D in [game.robot,game.companion]:
+  if not is_instance_valid(actor): continue
+  var target := x if actor == game.robot else x-380
+  var initial_core: Transform2D = actor.initial_poses["Core"]
+  var dx := target-initial_core.origin.x
+  actor.reset_cooldown = 3
+  for key: String in actor.parts:
+   var pose: Transform2D = actor.initial_poses[key];pose.origin.x += dx
+   actor.parts[key].reset_pose = pose;actor.parts[key].reset_requested = true
 func _run() -> void:
  if OUTPUT.is_empty(): OUTPUT = ProjectSettings.globalize_path("user://qa/nightfall/")
  if not OUTPUT.ends_with("/"): OUTPUT += "/"

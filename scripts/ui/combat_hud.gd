@@ -63,13 +63,14 @@ func _ready() -> void:
  var help := UI.label("",11,UI.MUTED);help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER;help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART;_named(self,help,"Help")
  var goal := UI.column(4);goal.name = "Objectives";goal.mouse_filter = Control.MOUSE_FILTER_IGNORE;add_child(goal)
  var caption := UI.label("ТЕКУЩАЯ ЗАДАЧА   ///",10,Color("d7b167"));goal.add_child(caption)
- objective = UI.paragraph("Проверьте приводы и стойку",13,UI.TEXT);goal.add_child(objective)
+ objective = UI.paragraph("Проверьте приводы и стойку",14,UI.TEXT);goal.add_child(objective)
  objective_meta = UI.label("АТ-01 «ОПЛОТ»",10,Color("7c9ca9"));objective_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART;goal.add_child(objective_meta);objective_meta.hide()
  progress = ProgressBar.new();progress.max_value = 4800;progress.show_percentage = false;progress.hide();goal.add_child(progress)
  integrity_text = UI.label("",12,UI.MUTED);integrity_text.hide();add_child(integrity_text)
  interact = UI.primary("ВЗАИМОДЕЙСТВИЕ");_named(self,interact,"Interact");interact.hide()
- left_walk = Hold.new();left_walk.text = "◀";right_walk = Hold.new();right_walk.text = "▶"
- for b: Button in [left_walk,right_walk]: b.add_theme_font_size_override("font_size",20);b.modulate.a = .65;add_child(b)
+ left_walk = Hold.new();left_walk.text = "◀ ШАГ";right_walk = Hold.new();right_walk.text = "ШАГ ▶"
+ for b: Button in [left_walk,right_walk]: b.add_theme_font_size_override("font_size",12);b.modulate.a = .84;add_child(b)
+ left_walk.tooltip_text = "Шаг влево / удерживать";right_walk.tooltip_text = "Шаг вправо / удерживать"
  left_walk.hold_changed.connect(func(value: bool) -> void: left_held = value;_movement())
  right_walk.hold_changed.connect(func(value: bool) -> void: right_held = value;_movement())
  radio = RadioView.new();radio.name = "Radio";add_child(radio);radio.bind(dispatcher);radio.history_requested.connect(func() -> void: history_requested())
@@ -79,7 +80,7 @@ func _ready() -> void:
  layout_ready = true;resized.connect(layout_hud);layout_hud()
 func _named(parent: Node,node: Node,id: String) -> void: node.name = id;parent.add_child(node)
 func configure_mission() -> Dictionary:
- mission = true;crew.show();$Top/Balance.hide();$Top/Reset.hide();$Top/Impulse.hide();radio.show();$Objectives.show();layout_hud()
+ mission = true;crew.show();$Top/Balance.hide();$Top/Reset.hide();$Top/Impulse.hide();radio.show();$Objectives.show();objective_meta.show();layout_hud()
  return {"objective":objective,"integrity_text":integrity_text,"progress":progress,"interact":interact,"left_walk":left_walk,"right_walk":right_walk,"radio_name":radio.callsign,"radio_body":radio.body,"radio_panel":radio}
 func layout_hud() -> void:
  if not layout_ready: return
@@ -100,20 +101,20 @@ func layout_hud() -> void:
  var stick_size := floorf(clampf(size.y*.389,210,295))
  $LeftStick.size = Vector2.ONE*stick_size;$RightStick.size = Vector2.ONE*stick_size
  $LeftStick.position = Vector2(34,size.y-stick_size-55);$RightStick.position = Vector2(size.x-stick_size-34,size.y-stick_size-55)
- $Objectives.position = Vector2(35,96);$Objectives.size = Vector2(203,56)
- left_walk.position = Vector2(size.x*.5-182,size.y-60);left_walk.size = Vector2(55,42)
- right_walk.position = Vector2(size.x*.5+127,size.y-60);right_walk.size = Vector2(55,42)
+ $Objectives.position = Vector2(35,96);$Objectives.size = Vector2(203,76)
+ left_walk.position = Vector2(size.x*.5-197,size.y-60);left_walk.size = Vector2(76,42)
+ right_walk.position = Vector2(size.x*.5+121,size.y-60);right_walk.size = Vector2(76,42)
  interact.position = Vector2(size.x*.5-150,size.y-126);interact.size = Vector2(300,48)
  $Help.position = Vector2(size.x*.5-195,size.y-106);$Help.size = Vector2(390,34)
- # Active radio opens in the centre top, preserving the diagnostic panels.
- radio.position = Vector2(size.x*.5-210,85);radio.size = Vector2(420,194);radio.visible = mission
- radio.idle_button.position = Vector2(size.x*.5-10,0);radio.idle_button.size = Vector2(196,37)
+ # Active calls replace the right diagnostic card, leaving both fighters visible.
+ radio.position = Vector2(size.x-442,85);radio.size = Vector2(420,194);radio.visible = mission
+ radio.idle_button.position = Vector2(224,0);radio.idle_button.size = Vector2(196,44)
  if not mission: title.text = "ПОЛИГОН / АТ-01";$Objectives.hide()
  if is_instance_valid(modal_panel): modal_panel.custom_minimum_size.x = minf(650,size.x-64)
  if is_instance_valid(order_panel): order_panel.position = Vector2(size.x*.5-125,size.y-270)
 func _process(delta: float) -> void:
  dispatcher.paused = paused or overlay != "";dispatcher.tick(delta);frame_clock += delta
- if is_instance_valid(radio.idle_button): radio.idle_button.position = Vector2(size.x*.5-8,0);radio.idle_button.size = Vector2(196,44)
+ if is_instance_valid(radio.idle_button): radio.idle_button.position = Vector2(radio.size.x-196,0);radio.idle_button.size = Vector2(196,44)
  if is_instance_valid(actor):
   $LeftStick.drive_load = actor.arm_load[0];$RightStick.drive_load = actor.arm_load[1]
   $LeftStick.queue_redraw();$RightStick.queue_redraw()
@@ -132,30 +133,39 @@ func _plate(rect: Rect2,alpha: float = .76,accent: bool = false) -> void:
 func _draw() -> void:
  if not layout_ready: return
  var w := size.x
+ var compact := size.y < 620
  _plate(Rect2(16,12,w-335,48),.54)
  draw_line(Vector2(83,20),Vector2(83,51),Color("c3a15c"),2)
  if mission:
-  _plate(Rect2(22,89,225,65),.72,true)
+  _plate(Rect2(22,89,225,91),.80,true)
   # A quiet route trace gives direction and distance without covering the world.
   var route_ratio := clampf(float(progress.value)/maxf(1,progress.max_value),0,1)
-  draw_line(Vector2(36,148),Vector2(231,148),Color(.38,.58,.66,.25),2)
-  draw_line(Vector2(36,148),Vector2(36+195*route_ratio,148),Color("d4b06d"),2)
-  _plate(Rect2(22,164,210,125),.72,true)
-  draw_string(UI.FONT,Vector2(36,182),"ДИАГНОСТИКА МЕХА / АТ-01",HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("a7c1c9"))
-  draw_line(Vector2(36,190),Vector2(218,190),Color(.48,.67,.73,.25),1)
+  draw_line(Vector2(36,174),Vector2(231,174),Color(.38,.58,.66,.25),2)
+  draw_line(Vector2(36,174),Vector2(36+195*route_ratio,174),Color("d4b06d"),2)
+  var diag_y := 189.0
+  _plate(Rect2(22,diag_y,225,92 if compact else 124),.80,true)
+  draw_string(UI.FONT,Vector2(36,diag_y+17),"АТ-01 / ТЕЛЕМЕТРИЯ",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("a7c1c9"))
+  draw_line(Vector2(36,diag_y+24),Vector2(231,diag_y+24),Color(.48,.67,.73,.25),1)
   var load_value: float = actor.load_ratio if is_instance_valid(actor) else 0
   var labels := ["ЦЕЛОСТНОСТЬ","РЕАКТОР","ДАВЛЕНИЕ","МОБИЛЬНОСТЬ"]
   var values := ["%d %%"%ceili(health),"%.1f МВт"%(4.2+load_value*1.5),"%.1f МПа"%(22+load_value*12),"НОРМА" if health > 30 else "КРИТИЧНО"]
   for i in range(4):
-   var y := 210+i*22.0
+   var y := diag_y+40+i*(15.0 if compact else 22.0)
    draw_circle(Vector2(40,y-4),3,Color("80b7c5"));draw_string(UI.FONT,Vector2(52,y),labels[i],HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("96afb9"))
-   draw_string(UI.MONO,Vector2(162,y),values[i],HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("a5d3ab") if i == 3 else UI.TEXT)
-  _hull_diagram(Rect2(w-223,143,201,162))
+   draw_string(UI.MONO,Vector2(167,y),values[i],HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("a5d3ab") if i == 3 else UI.TEXT)
+  if not radio.active or radio.collapsed: _hull_diagram(Rect2(w-223,143,201,122 if compact else 162))
  draw_polyline(PackedVector2Array([Vector2(0,size.y-42),Vector2(35,size.y-42),Vector2(49,size.y-22),Vector2(293,size.y-22),Vector2(308,size.y-37)]),Color(.38,.63,.73,.35),1,true)
  draw_polyline(PackedVector2Array([Vector2(w,size.y-42),Vector2(w-35,size.y-42),Vector2(w-49,size.y-22),Vector2(w-293,size.y-22),Vector2(w-308,size.y-37)]),Color(.38,.63,.73,.35),1,true)
 func _hull_diagram(rect: Rect2) -> void:
  _plate(rect,.74,true)
  var p := rect.position
+ if rect.size.y < 140:
+  draw_string(UI.FONT,p+Vector2(14,20),"КОНТУР ЗАЩИТЫ",HORIZONTAL_ALIGNMENT_LEFT,-1,11,UI.CYAN)
+  var titles := ["ГОЛОВА","КОРПУС","П. РУКА","Л. РУКА","П. НОГА","Л. НОГА"]
+  for i in range(6):
+   var point := p+Vector2(14+(i%2)*92,47+(i/2)*25)
+   draw_circle(point+Vector2(0,-4),2.5,Color("83bd90"));draw_string(UI.FONT,point+Vector2(9,0),titles[i],HORIZONTAL_ALIGNMENT_LEFT,-1,10,UI.MUTED)
+  return
  draw_string(UI.FONT,p+Vector2(14,17),"СОСТОЯНИЕ КОРПУСА",HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("b1c7cc"))
  var good := Color("83bd90");var warn := Color("d5b265")
  var o := p+Vector2(45,74)

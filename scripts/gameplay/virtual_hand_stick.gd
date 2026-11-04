@@ -66,11 +66,15 @@ func release() -> void:
  value = Vector2.ZERO
  queue_redraw()
 
+func _notification(what: int) -> void:
+ if what in [NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_APPLICATION_PAUSED]: release()
+
 func _draw() -> void:
  var color := UiStyle.CYAN if hand_index == 1 else Color("bcc6ce")
- draw_circle(origin,radius,Color(.025,.04,.055,.24))
+ var held := touch_index >= 0 or mouse_active
+ draw_circle(origin,radius,Color(.025,.04,.055,.19 if held else .09))
  draw_arc(origin,radius+3,0,TAU,128,Color(color,.10),7,true)
- draw_arc(origin,radius,0,TAU,128,Color(color,.72),1.3,true)
+ draw_arc(origin,radius,0,TAU,128,Color(color,.88 if held else .50),1.3,true)
  draw_arc(origin,radius+5,-.23,.23,18,Color("d5ac57"),2.0,true)
  draw_arc(origin,radius+5,PI-.23,PI+.23,18,Color("d5ac57"),2.0,true)
  draw_arc(origin,radius*.55,0,TAU,96,Color(color,.16),1.0,true)
@@ -81,7 +85,7 @@ func _draw() -> void:
  var load_color := Color("d5ac70") if drive_load < .9 else Color("d16a62")
  draw_arc(origin,radius+5,-PI*.5,-PI*.5+TAU*clampf(drive_load,0,1),64,Color(load_color,.6),2,true)
  var knob := origin+value*radius*.72
- draw_circle(knob,radius*.25,Color(.075,.115,.14,.66))
+ draw_circle(knob,radius*.25,Color(.075,.115,.14,.75 if held else .42))
  draw_arc(knob,radius*.25,0,TAU,64,Color(color,.92),2,true)
  draw_circle(knob,3,Color(color,.75))
  var y := size.y-28.0

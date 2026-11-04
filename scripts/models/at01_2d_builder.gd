@@ -29,7 +29,7 @@ func create(spawn_x: float = 0.0) -> Node2D:
   var resting := Vector2(-.25 if far else .50,3.10)*P
   var angles: Vector2 = Controller.solve_chain(resting,1.65*P,1.72*P,1.0)
   _chain(prefix+"UpperArm",prefix+"Forearm",shoulder,angles,1.65*P,1.72*P,7,7.5,"upper_arm","forearm",far,0 if far else 4)
-  _joint(prefix+"Shoulder","Core",prefix+"UpperArm",shoulder,-TAU,TAU)
+  _joint(prefix+"Shoulder","Core",prefix+"UpperArm",shoulder,Controller.SHOULDER_MIN,Controller.SHOULDER_MAX)
   var elbow := shoulder+Vector2.DOWN.rotated(angles.x)*1.65*P
   _joint(prefix+"Elbow",prefix+"UpperArm",prefix+"Forearm",elbow,-2.7,-.025)
   var hip := Vector2(.33 if far else -.33,-4.65)*P
@@ -58,7 +58,7 @@ func _body(key: String, point: Vector2, size_value: Vector2, mass_value: float, 
  body.continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
  body.contact_monitor = true;body.max_contacts_reported = 8
  body.collision_layer = 2;body.collision_mask = 5;body.physics_material_override = contact_material
- body.set("max_spin",7.0 if kind in ["upper_arm","forearm"] else 11.0)
+ body.set("max_spin",4.2 if kind in ["upper_arm","forearm"] else 11.0)
  _child(bodies,body)
  var proxy := CollisionShape2D.new();proxy.name = "Collision"
  if kind in ["upper_arm","forearm"]:
@@ -67,13 +67,7 @@ func _body(key: String, point: Vector2, size_value: Vector2, mass_value: float, 
  else:
   var box := RectangleShape2D.new();box.size = size_value;proxy.shape = box
  _child(body,proxy)
- if kind == "forearm":
-  var extra := CollisionShape2D.new();extra.name = "HeadCollision" if kind == "core" else "FistCollision"
-  if kind == "core":
-   var head := RectangleShape2D.new();head.size = Vector2(1.55,.95)*P;extra.shape = head;extra.position = Vector2(.55,-2.05)*P
-  else:
-   var fist := CircleShape2D.new();fist.radius = .54*P;extra.shape = fist;extra.position = Vector2(0,length*.5+.33*P)
-  _child(body,extra)
+ # The armor silhouette includes the fist; a second oversized circle struck empty air.
  SpriteArt.attach(body,kind,length,far,layer)
  body_map[key] = body
  return body

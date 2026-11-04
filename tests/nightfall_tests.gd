@@ -73,7 +73,7 @@ func _run() -> void:
  Expedition.load_progress();check(Expedition.flags.SIGNATURE.size() > 0,"signature survives reload")
  await get_tree().create_timer(5.5).timeout
  check(not game.landing and game.robot.enabled,"landing returns controls")
- check(game.environment.water != null and game.environment.water.material != null,"live refracting water layer")
+ check(game.environment.water != null and game.environment.water.material != null,"flat side-view water layer")
  check(game.target_zoom <= game.CAMERA_ZOOM and game.camera.zoom.x/(float(game.arena_view.size.y)/720.0) < .64,"default camera remains pulled back")
  var start_x: float = game.robot.core.position.x
  Input.action_press("future_move_right");await physics_frames(250);Input.action_release("future_move_right");await physics_frames(12)
@@ -89,18 +89,22 @@ func _run() -> void:
  game.get_node("HUD").show_settings();await frames();check(game.get_node("HUD").settings_overlay.is_visible_in_tree(),"settings visible over paused game")
  game.get_node("HUD").close_overlay();game._set_paused(false);await physics_frames(4);check(game.robot.enabled,"resume restores actor")
  for i in range(220): game.environment.splash(float(i),1)
- check(game.environment.splashes.size() <= 160 and game.environment.wakes.size() <= 16,"water effects have fixed particle limits")
+ check(game.environment.splashes.size() <= game.environment.MAX_SPRAY and game.environment.wakes.size() <= 16,"water effects have fixed particle limits")
  # Exercise the real collision -> impact signal -> hostile damage path.
- var shift: float = 3250-game.robot.core.position.x
+ var shift: float = game.enemy.position.x-500-game.robot.core.position.x
  for body in game.robot.parts.values(): body.position.x += shift
  game.enemy.set_enabled(true);game.stage = "fight"
  right.touch_index = 12
- for i in range(1600):
+ Input.action_press("future_move_right")
+ for i in range(2200):
   if game.enemy.state == "dead": break
-  var angle := float(i)*.025
-  right._update_value(right.origin+Vector2(cos(angle),sin(angle))*right.radius)
+  var phase := i%260
+  var aim := Vector2(-.6,.45) if phase < 90 else Vector2(.95,-.55)
+  right._update_value(right.origin+aim*right.radius)
+  if i%260 == 259: print("PUNCH_METRICS ",game.robot.arm_goals[1]," actual=",game.robot.parts.RightUpperArm.rotation-game.robot.core.rotation,",",game.robot.parts.RightForearm.rotation-game.robot.parts.RightUpperArm.rotation," contact=",game.robot.parts.RightForearm.opponent_impulse," positions=",game.robot.parts.RightForearm.position," enemy=",game.enemy.position," HP=",game.enemy.health)
   await get_tree().physics_frame
- right.release()
+ Input.action_release("future_move_right");right.release()
+ print("COMBAT POSITION ",game.robot.core.position," vs ",game.enemy.position)
  check(game.enemy.health <= 0,"physical fist combat defeats the hostile")
  check(game.stage == "arrival","real victory opens docking objective")
  print("COMBAT HEALTH ",game.enemy.health," PLAYER ",game.integrity)

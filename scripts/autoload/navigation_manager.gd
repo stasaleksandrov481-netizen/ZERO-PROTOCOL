@@ -114,13 +114,13 @@ func go(route: StringName) -> void:
 	route_changed.emit(route)
 	if current_screen.has_method("focus_initial"): call_deferred("_focus_screen",current_screen)
 
-func _focus_screen(screen: Control) -> void:
+func _focus_screen(screen: Variant) -> void:
 	if not is_instance_valid(screen) or not screen.is_inside_tree(): return
 	if screen == current_screen and not transitioning and not is_instance_valid(active_modal):
 		screen.call("focus_initial")
 
 func _range_failed(details: Dictionary, errors: Array[Dictionary]) -> void:
-	var report := {"patch":"RIFT-0.11.0","engine":Engine.get_version_info()["string"],
+	var report := {"patch":"RIFT-0.12.0","engine":Engine.get_version_info()["string"],
 		"platform":OS.get_name(),"startup":details,"errors":errors}
 	var log_file := FileAccess.open("user://at01_startup_report.json",FileAccess.WRITE)
 	if log_file != null:
@@ -138,7 +138,7 @@ func _range_failed(details: Dictionary, errors: Array[Dictionary]) -> void:
 	if not selected.is_empty():
 		message += "\n\n%s:%d\n%s" % [str(selected["file"]).trim_prefix("res://"),
 			int(selected["line"]),str(selected["message"]).left(360)]
-	message += "\n\nПатч RIFT-0.11.0 · Godot %s" % Engine.get_version_info()["string"]
+	message += "\n\nПатч RIFT-0.12.0 · Godot %s" % Engine.get_version_info()["string"]
 	transitioning = false
 	current_route = &""
 	await go(&"home")

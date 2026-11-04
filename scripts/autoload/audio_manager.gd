@@ -17,6 +17,8 @@ var servo_stream: AudioStream
 var radio_stream: AudioStreamWAV
 var impact_stream: AudioStreamWAV
 var last_impact_time := -1000
+var weight_step_stream: AudioStreamWAV
+var weight_step_player: AudioStreamPlayer
 const SOUND_PATHS := {
  "click": "res://assets/audio/ui_click.wav",
  "back": "res://assets/audio/ui_back.wav",
@@ -137,7 +139,7 @@ func shutdown() -> void:
   player.stream_paused = false
   player.stop()
   player.stream = null
- for player: AudioStreamPlayer in [music, ambience, splash_player]:
+ for player: AudioStreamPlayer in [music, ambience, splash_player,weight_step_player]:
   if is_instance_valid(player):
    player.stream_paused = false
    player.stop()
@@ -186,6 +188,18 @@ func play_briefing_radio() -> void:
 
 var splash_stream: AudioStreamWAV
 var splash_player: AudioStreamPlayer
+func play_weight_step(strength: float,wet: bool) -> void:
+ if not focused or not test_active: return
+ if weight_step_stream == null:
+  weight_step_stream = AudioStreamWAV.new();weight_step_stream.format = AudioStreamWAV.FORMAT_16_BITS;weight_step_stream.mix_rate = 22050
+  var data := PackedByteArray();data.resize(22050*2)
+  for i in range(22050):
+   var t := float(i)/22050.0
+   var envelope := minf(1,t/.013)*exp(-t*6)
+   var sample := sin(TAU*(49*t+.25*(1-exp(-t*12))))*.54+sin(TAU*93*t)*.18*exp(-t*8)+sin(TAU*157*t)*.1*exp(-t*11)
+   data.encode_s16(i*2,int(sample*envelope*24000))
+  weight_step_stream.data = data;weight_step_player = AudioStreamPlayer.new();weight_step_player.bus = "SFX";weight_step_player.stream = weight_step_stream;add_child(weight_step_player)
+ weight_step_player.pitch_scale = .88 if wet else 1.0;weight_step_player.volume_db = lerpf(-16,-7,clampf(strength,0,1));weight_step_player.play()
 func play_splash(strength: float = .5) -> void:
  if not focused or not test_active: return
  if splash_stream == null:
@@ -196,4 +210,4 @@ func play_splash(strength: float = .5) -> void:
    var envelope := minf(1,t/.025)*exp(-t*7)
    data.encode_s16(i*2,int(clampf((filtered*.65+sin(t*230)*exp(-t*15)*.18)*envelope,-1,1)*25000))
   splash_stream.data = data;splash_player = AudioStreamPlayer.new();splash_player.bus = "SFX";splash_player.stream = splash_stream;add_child(splash_player)
- splash_player.pitch_scale = lerpf(1.1,.7,clampf(strength,0,1));splash_player.volume_db = lerpf(-22,-8,clampf(strength,0,1));splash_player.play()
+ splash_player.pitch_scale = lerpf(.97,.68,clampf(strength,0,1));splash_player.volume_db = lerpf(-17,-4,clampf(strength,0,1));splash_player.play()

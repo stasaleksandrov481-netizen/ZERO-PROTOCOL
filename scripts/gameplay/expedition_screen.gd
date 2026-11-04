@@ -35,8 +35,9 @@ func _ready() -> void:
  if not environment.initialized:
   startup_stage = "Загрузка окружения";startup_error = environment.startup_error;return
  companion = Builder.new().create(robot_spawn_x-390);companion.name = "Kedr";world.add_child(companion);companion.modulate = Color(.74,.86,.96);companion.set_meta("callsign","КЕДР / АТ-02")
- companion.footstep.connect(func(strength: float) -> void:
-  if not landing: environment.splash(companion.core.position.x,strength*.65))
+ companion.planted.connect(func(point: Vector2,strength: float) -> void:
+  if not landing: environment.splash(point.x,maxf(.5,strength*.85)))
+ robot.planted.connect(_planted)
  companion.impact.connect(func(_point: Vector2,strength: float,_direction: Vector2,target_body: PhysicsBody2D) -> void:
   if target_body == enemy and is_instance_valid(enemy): enemy.register_hit(strength,true))
  enemy = load("res://scripts/gameplay/klyk_2d.gd").new();enemy.name = "Klyk";enemy.position = Vector2(3470,-255);enemy.target = robot;world.add_child(enemy)
@@ -144,7 +145,11 @@ func _enemy_defeated() -> void:
 func _radio(speaker: String,text: String,priority: int = 0) -> void: $HUD.dispatcher.enqueue(speaker,text,priority)
 func _footstep(strength: float) -> void:
  super._footstep(strength)
- if is_instance_valid(environment) and not landing: environment.splash(robot.core.position.x,strength)
+func _planted(point: Vector2,strength: float) -> void:
+ if landing or not is_instance_valid(environment): return
+ environment.splash(point.x,maxf(.65,strength))
+ hit_feedback.step_weight(maxf(.4,strength))
+ AudioManager.play_weight_step(strength,environment.biome == "sea")
 func _interact() -> void:
  if is_instance_valid(debrief) or not interact.visible: return
  _release_input()

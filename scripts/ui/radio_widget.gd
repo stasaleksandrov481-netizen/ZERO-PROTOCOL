@@ -37,8 +37,11 @@ func _ready() -> void:
  idle_button.quiet = true;idle_button.add_theme_font_size_override("font_size",12);add_child(idle_button)
  resized.connect(_layout);_layout();_visibility()
 func bind(value: RefCounted) -> void:
- dispatcher = value;dispatcher.message_started.connect(_message);dispatcher.message_finished.connect(func(_id: String) -> void: _sync());dispatcher.state_changed.connect(_sync)
+ dispatcher = value;dispatcher.page_fits = _page_fits;dispatcher.message_started.connect(_message);dispatcher.message_finished.connect(func(_id: String) -> void: _sync());dispatcher.state_changed.connect(_sync)
  _sync()
+func _page_fits(text: String) -> bool:
+ var bounds := UI.FONT.get_multiline_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,maxf(220,size.x-125),17)
+ return bounds.y <= 76
 func _message(value: Dictionary) -> void:
  if portraits == null: _load_portraits()
  message = value;person = who(str(value.speaker));var data: Dictionary = PEOPLE[person]
@@ -91,7 +94,7 @@ func _draw() -> void:
   var height := 3+pulse*11
   draw_line(Vector2(111+i*3.8,h-20-height*.5),Vector2(111+i*3.8,h-20+height*.5),Color(accent,.7),1.6)
  if not message.is_empty() and int(message.pages)>1:
-  draw_string(UI.MONO,Vector2(w-91,20),"%d/%d"%[int(message.page),int(message.pages)],HORIZONTAL_ALIGNMENT_RIGHT,25,9,UI.MUTED)
+  draw_string(UI.MONO,Vector2(w-54,h-33),"%d/%d"%[int(message.page),int(message.pages)],HORIZONTAL_ALIGNMENT_RIGHT,32,10,UI.MUTED)
 func _advance() -> void:
  if is_instance_valid(dispatcher): dispatcher.advance()
 func _collapse() -> void: collapsed = true;_visibility()

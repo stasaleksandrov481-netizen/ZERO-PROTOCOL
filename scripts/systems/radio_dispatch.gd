@@ -13,6 +13,7 @@ var paused := false
 var page := 0
 var pages: Array[String] = []
 var serial := 0
+var page_fits: Callable
 func enqueue(speaker: String,text: String,priority: int = 0,id: String = "") -> bool:
  text = text.strip_edges()
  if text.is_empty(): return false
@@ -31,7 +32,7 @@ func enqueue(speaker: String,text: String,priority: int = 0,id: String = "") -> 
  state_changed.emit();return true
 func _begin_next() -> void:
  if pending.is_empty(): current = {};state_changed.emit();return
- current = pending.pop_front();pages = paginate(str(current.full_body),118);page = 0;_show_page()
+ current = pending.pop_front();pages = paginate_measured(str(current.full_body),page_fits) if page_fits.is_valid() else paginate(str(current.full_body),118);page = 0;_show_page()
 func _show_page() -> void:
  current.body = pages[page];current.page = page+1;current.pages = pages.size();current.queued = pending.size()
  duration = clampf(float(pages[page].split(" ",false).size())/2.8+1.8,5.5,10.0);elapsed = 0
@@ -52,6 +53,15 @@ static func paginate(text: String,limit: int) -> Array[String]:
  for word: String in text.split(" ",false):
   if not line.is_empty() and line.length()+word.length()+1 > limit: output.append(line);line = ""
   line += (" " if not line.is_empty() else "")+word
+ if not line.is_empty(): output.append(line)
+ if output.is_empty(): output.append(text)
+ return output
+static func paginate_measured(text: String,fits: Callable) -> Array[String]:
+ var output: Array[String] = [];var line := ""
+ for word: String in text.split(" ",false):
+  var candidate := line+(" " if not line.is_empty() else "")+word
+  if not line.is_empty() and not bool(fits.call(candidate)): output.append(line);line = word
+  else: line = candidate
  if not line.is_empty(): output.append(line)
  if output.is_empty(): output.append(text)
  return output
