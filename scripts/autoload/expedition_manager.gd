@@ -114,12 +114,14 @@ func save_progress() -> bool:
 func begin(name_value: String = "Первый") -> bool:
  if started: return true
  return new_campaign(name_value)
-func new_campaign(name_value: String = "Первый",family: String = "",signature: Array = [],choices: Dictionary = {}) -> bool:
+func new_campaign(name_value: String = "Первый",family: String = "",signature: Array = [],choices: Dictionary = {},briefing_skipped: bool = false) -> bool:
  var previous := snapshot()
  pilot_name = (name_value.strip_edges()+" "+family.strip_edges()).strip_edges().left(64)
  if pilot_name.is_empty(): pilot_name = "Первый"
  started = true;completed = false;current_base = "A01";checkpoint = "landing";credits = 1200;alloy = 0;coolants = 0;visited.assign(["A01"]);radio_log.clear()
  flags = {"CH1_STARTED":true,"MECH_OWNED_AT01":true,"TRAVEL_SCHEMA":2,"DANIEL_MET":true,"INTRO_DONE":true,"CONTRACT_SIGNED":not signature.is_empty(),"SIGNATURE":signature.duplicate(true),"PILOT_GIVEN":name_value,"PILOT_FAMILY":family,"INTRO_CHOICES":choices.duplicate(true),"ACTIVE_ROUTE":{"id":"DROP","from":"A01","to":"A01","name":"Морская высадка","biome":"sea","reward":0},"ROUTE_ACTIVE":true}
+ flags["INTRO_SKIPPED"] = briefing_skipped
+ radio_log.assign(preload("res://scripts/story/prologue_script.gd").field_records(choices))
  map_zoom = 1;map_pan = Vector2.ZERO;companion_order = "Прикрывай"
  if save_progress(): return true
  _apply(previous);return false

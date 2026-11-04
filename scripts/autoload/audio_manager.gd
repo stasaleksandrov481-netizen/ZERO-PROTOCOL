@@ -10,6 +10,7 @@ var mechanical_index := 0
 var last_step_time := 0
 var test_active := false
 var expedition_active := false
+var briefing_active := false
 var focused := true
 var step_stream: AudioStream
 var servo_stream: AudioStream
@@ -54,6 +55,8 @@ func _ready() -> void:
 func set_test_active(value: bool) -> void:
  test_active = value
  expedition_active = false
+ briefing_active = false
+ if is_instance_valid(music): music.volume_db = 0
  if is_instance_valid(music): music.stream_paused = value or not focused
  if is_instance_valid(ambience):
   ambience.volume_db = 0
@@ -151,6 +154,7 @@ func _notification(what: int) -> void:
  elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
   focused = true
   if expedition_active: set_expedition_active(true)
+  elif briefing_active: set_briefing_active(true)
   else: set_test_active(test_active)
 
 func _make_radio() -> AudioStreamWAV:
@@ -168,6 +172,17 @@ func play_radio() -> void:
  if not focused or not expedition_active: return
  var player := mechanical_voices[mechanical_index];mechanical_index = (mechanical_index+1)%mechanical_voices.size()
  player.stream = radio_stream;player.pitch_scale = 1;player.volume_db = -16;player.play()
+
+func set_briefing_active(value: bool) -> void:
+ if not value and not briefing_active: return
+ set_test_active(false);briefing_active = value
+ if is_instance_valid(music): music.volume_db = -7 if value else 0
+ if is_instance_valid(ambience): ambience.volume_db = -13 if value else 0
+
+func play_briefing_radio() -> void:
+ if not focused or not briefing_active or mechanical_voices.is_empty(): return
+ var player := mechanical_voices[mechanical_index];mechanical_index = (mechanical_index+1)%mechanical_voices.size()
+ player.stream = radio_stream;player.pitch_scale = .96;player.volume_db = -24;player.play()
 
 var splash_stream: AudioStreamWAV
 var splash_player: AudioStreamPlayer

@@ -58,7 +58,10 @@ func _run() -> void:
  pad._start(Vector2(40,50));pad._append(Vector2(110,70));pad._append(Vector2(170,45));pad.drawing = false
  flow._sign_next();await frames()
  check(flow.step == 2 and flow.dialogue_index == 0,"contract opens protected briefing")
- for i in range(5): flow._answer(i%2);await frames()
+ for i in range(5):
+  flow._answer(i%2);await frames();flow._advance_briefing();await frames()
+ check(flow.briefing_phase == "summary" and Expedition.snapshot() == old,"readiness summary still preserves the existing campaign")
+ flow._advance_briefing()
  await frames(15)
  check(NavigationManager.current_route == &"expedition","briefing enters sea mission")
  var game = NavigationManager.current_screen

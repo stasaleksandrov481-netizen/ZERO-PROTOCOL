@@ -38,11 +38,15 @@ var modal_center: CenterContainer
 var previous_focus: Control
 var layout_ready := false
 var last_radio_id := ""
+var last_objective := ""
+var objective_tween: Tween
+var history_records: VBoxContainer
+var history_tabs: Dictionary = {}
 func _ready() -> void:
  mouse_filter = Control.MOUSE_FILTER_IGNORE;theme = UI.design_theme()
  header = Control.new();header.name = "Top";header.mouse_filter = Control.MOUSE_FILTER_IGNORE;add_child(header)
  _named(header,UI.icon_button("campaign",Callable(),"Карта кампании"),"Back")
- _named(header,UI.label("СЕКТОР АТ-02  /  ГОРИЗОНТ  0.00 М/С",11,Color("86a6b4")),"Status")
+ _named(header,UI.label("АТ-01  /  ОПЛОТ  0.00 М/С",11,Color("86a6b4")),"Status")
  var balance := CheckButton.new();balance.text = "Стабилизация";balance.button_pressed = true;_named(header,balance,"Balance")
  _named(header,UI.button("СБРОС"),"Reset");_named(header,UI.button("ТОЛЧОК"),"Impulse")
  _named(header,UI.icon_button("pause",Callable(),"Пауза"),"Pause")
@@ -60,7 +64,7 @@ func _ready() -> void:
  var goal := UI.column(4);goal.name = "Objectives";goal.mouse_filter = Control.MOUSE_FILTER_IGNORE;add_child(goal)
  var caption := UI.label("ТЕКУЩАЯ ЗАДАЧА   ///",10,Color("d7b167"));goal.add_child(caption)
  objective = UI.paragraph("Проверьте приводы и стойку",13,UI.TEXT);goal.add_child(objective)
- objective_meta = UI.label("АТ-01 «ГОРИЗОНТ»",10,Color("7c9ca9"));objective_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART;goal.add_child(objective_meta);objective_meta.hide()
+ objective_meta = UI.label("АТ-01 «ОПЛОТ»",10,Color("7c9ca9"));objective_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART;goal.add_child(objective_meta);objective_meta.hide()
  progress = ProgressBar.new();progress.max_value = 4800;progress.show_percentage = false;progress.hide();goal.add_child(progress)
  integrity_text = UI.label("",12,UI.MUTED);integrity_text.hide();add_child(integrity_text)
  interact = UI.primary("ВЗАИМОДЕЙСТВИЕ");_named(self,interact,"Interact");interact.hide()
@@ -113,6 +117,12 @@ func _process(delta: float) -> void:
  if is_instance_valid(actor):
   $LeftStick.drive_load = actor.arm_load[0];$RightStick.drive_load = actor.arm_load[1]
   $LeftStick.queue_redraw();$RightStick.queue_redraw()
+ if mission and objective.text != last_objective:
+  last_objective = objective.text
+  if is_instance_valid(objective_tween): objective_tween.kill()
+  if not bool(SettingsManager.get_value("video/reduced_motion")):
+   objective.modulate.a = .35;objective_tween = create_tween();objective_tween.tween_property(objective,"modulate:a",1.0,.38)
+  else: objective.modulate.a = 1
  queue_redraw()
 func _plate(rect: Rect2,alpha: float = .76,accent: bool = false) -> void:
  var p := PackedVector2Array([rect.position+Vector2(11,0),rect.position+Vector2(rect.size.x,0),rect.end-Vector2(0,11),rect.end-Vector2(11,0),rect.position+Vector2(0,rect.size.y),rect.position+Vector2(0,11)])
@@ -126,8 +136,12 @@ func _draw() -> void:
  draw_line(Vector2(83,20),Vector2(83,51),Color("c3a15c"),2)
  if mission:
   _plate(Rect2(22,89,225,65),.72,true)
+  # A quiet route trace gives direction and distance without covering the world.
+  var route_ratio := clampf(float(progress.value)/maxf(1,progress.max_value),0,1)
+  draw_line(Vector2(36,148),Vector2(231,148),Color(.38,.58,.66,.25),2)
+  draw_line(Vector2(36,148),Vector2(36+195*route_ratio,148),Color("d4b06d"),2)
   _plate(Rect2(22,164,210,125),.72,true)
-  draw_string(UI.FONT,Vector2(36,182),"ДИАГНОСТИКА МЕХА / R-01",HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("a7c1c9"))
+  draw_string(UI.FONT,Vector2(36,182),"ДИАГНОСТИКА МЕХА / АТ-01",HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("a7c1c9"))
   draw_line(Vector2(36,190),Vector2(218,190),Color(.48,.67,.73,.25),1)
   var load_value: float = actor.load_ratio if is_instance_valid(actor) else 0
   var labels := ["ЦЕЛОСТНОСТЬ","РЕАКТОР","ДАВЛЕНИЕ","МОБИЛЬНОСТЬ"]
@@ -162,6 +176,8 @@ func release_movement() -> void:
  left_walk.release();right_walk.release();left_held = false;right_held = false;move_changed.emit(0)
 func contains_pointer(point: Vector2) -> bool:
  if overlay != "" or is_instance_valid(settings_overlay): return true
+ var guide := get_node_or_null("FieldGuide")
+ if guide != null and guide.is_visible_in_tree() and guide.close_button.get_global_rect().has_point(point): return true
  var controls: Array[Control] = [$Top/Back,$Top/Pause,$Top/Settings,$Top/Balance,$Top/Reset,$Top/Impulse,$Zoom,$LeftStick,$RightStick,interact,left_walk,right_walk,crew]
  for node: Control in controls:
   if node.is_visible_in_tree() and Rect2(Vector2.ZERO,node.size).has_point(node.get_global_transform_with_canvas().affine_inverse()*point): return true
@@ -194,6 +210,7 @@ func show_pause() -> void:
  var content := _modal("pause")
  content.add_child(UI.micro("ОПЛОТ / ЛОКАЛЬНЫЙ КОНТУР"));content.add_child(UI.heading("ПАУЗА",38))
  content.add_child(UI.paragraph(title.text,16))
+ if mission: content.add_child(UI.paragraph("Руки: два стика или ЛКМ / ПКМ. Ходьба: стрелки или A / D.\nНа телефоне — двойной тап с удержанием по свободной стороне.\nКедр: кнопка группового канала. Пролог и эфир: журнал связи.",14,UI.CYAN))
  content.add_child(UI.primary("ПРОДОЛЖИТЬ",func() -> void: resume_requested.emit()))
  var row := UI.row(10);content.add_child(row)
  row.add_child(UI.button("КОНТРОЛЬНАЯ ТОЧКА" if mission else "СБРОС ПОЛИГОНА",func() -> void: restart_requested.emit()))
@@ -224,12 +241,23 @@ func history_requested() -> void:
 func show_history(log: Array) -> void:
  var content := _modal("radio")
  var head := UI.row();content.add_child(head);head.add_child(UI.heading("ЖУРНАЛ СВЯЗИ",26));head.add_child(UI.button("ЗАКРЫТЬ",func() -> void: resume_requested.emit()))
- var scroll := ScrollContainer.new();scroll.custom_minimum_size.y = 280;scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED;content.add_child(scroll)
- var records := UI.column(12);scroll.add_child(records)
- if log.is_empty(): records.add_child(UI.paragraph("Канал свободен. Принятые сообщения появятся здесь.",17))
- for entry: Dictionary in log:
-  var record := UI.column(7);record.add_child(UI.section_title(entry.get("speaker","КАНАЛ")));record.add_child(UI.paragraph(entry.get("text",""),17,UI.TEXT));records.add_child(UI.panel(record,16))
+ var tabs := UI.row(8);content.add_child(tabs);history_tabs.clear()
+ for item: Array in [["all","ВЕСЬ ЭФИР"],["prologue","ИНСТРУКТАЖ"],["field","ВЫХОД"]]:
+  var id := str(item[0]);var button := UI.button(item[1],func() -> void: _filter_history(log,id));button.add_theme_font_size_override("font_size",12);tabs.add_child(button);history_tabs[id] = button
+ var scroll := ScrollContainer.new();scroll.custom_minimum_size.y = minf(280,size.y-260);scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED;content.add_child(scroll)
+ history_records = UI.column(12);scroll.add_child(history_records);_filter_history(log,"all")
  layout_hud();call_deferred("_fit_modal")
+func _filter_history(log: Array,filter: String) -> void:
+ for node in history_records.get_children(): history_records.remove_child(node);node.queue_free()
+ for id: String in history_tabs: history_tabs[id].disabled = id == filter
+ for i in range(log.size()-1,-1,-1):
+  var entry: Dictionary = log[i]
+  var intro := str(entry.get("id","")).begins_with("prologue_")
+  if (filter == "prologue" and not intro) or (filter == "field" and intro): continue
+  var record := UI.column(7)
+  record.add_child(UI.micro("ДО ВЫСАДКИ / ИНСТРУКТАЖ" if intro else "ВЫХОД / %02d:%02d"%[int(entry.get("time",0))/60,int(entry.get("time",0))%60]))
+  record.add_child(UI.section_title(entry.get("speaker","КАНАЛ")));record.add_child(UI.paragraph(entry.get("text",""),17,UI.TEXT));history_records.add_child(UI.panel(record,16))
+ if history_records.get_child_count() == 0: history_records.add_child(UI.paragraph("В этом канале пока нет записей.",17))
 func show_orders(current_order: String) -> void:
  if is_instance_valid(order_panel): order_panel.queue_free();order_panel = null;return
  var column := UI.column(8);column.add_child(UI.section_title("КОМАНДА НАПАРНИКУ"))

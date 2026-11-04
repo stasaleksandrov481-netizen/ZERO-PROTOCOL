@@ -22,13 +22,12 @@ var dialogue_text: Label
 var type_clock := 0.0
 var step_caption: Label
 var portrait_atlas: Texture2D
-const BRIEFING := [
- {"speaker":"ЭХО / НИКА ЛЕБЕДЕВА","role":"ДИСПЕТЧЕР СЕТИ · ЗАЩИЩЁННЫЙ КАНАЛ","body":"{pilot}, ваша регистрация подтверждена. Вы — пилот программы «Оплот» корпорации ЭНТЕРА. В эфире ваш позывной — Первый. Машина АТ-01 принята после подготовки; сегодня ваш первый выход за периметр.","answers":["Первый на связи. К заданию готов.","Что от меня потребуется?"],"replies":["Связь уверенная. Сейчас познакомлю с группой.","Держать машину, слушать эфир и вернуться с группой. Остальному научит дорога."]},
- {"speaker":"КЕДР / ДАНИИЛ КРАВЦОВ","role":"ПИЛОТ СОПРОВОЖДЕНИЯ · АТ-02","body":"Первый, я Даниил. Позывной Кедр. У меня своя машина, АТ-02, так что в твою кабину не набиваюсь. На выходе идём парой: ты ведёшь, я прикрываю. Если понадобится помощь — скажи по групповому каналу.","answers":["Принял, Кедр. Держимся вместе.","Ты уже выходил за периметр?"],"replies":["Так надёжнее. Увидимся у воды.","Выходил. Главное — не спеши за первым силуэтом и не теряй мой сигнал."]},
- {"speaker":"ВЕТРОВА / ЕЛЕНА ВЕТРОВА","role":"КОМАНДИР ПОГРАНИЧНОГО СЕКТОРА","body":"После инцидента на «Горизонте» мы удерживаем береговые базы. Искажённые активны ночью: днём контактов почти нет. Потому боевые выходы идут в тёмное время. Что им нужно — это пока не ваша задача. Сегодня вы помогаете людям на побережье.","answers":["Какова цель первого выхода?","Ночью у нас будет поддержка?"],"replies":["Откроем морской подход к ДОК-17. С него начнётся ваш маршрут по поясу.","Диспетчер и Кедр остаются с вами. Эвакуация зависит от погоды и свободного коридора."]},
- {"speaker":"ЭХО / НИКА ЛЕБЕДЕВА","role":"ВОЗДУШНЫЙ КОНВОЙ · ПОДХОД К БЕРЕГУ","body":"Транспортные вертолёты доставят ваши машины на внешнюю отмель. Отцепление — над мелководьем. Вода до коленных шарниров, дно под ногами плотное. После посадки проверьте руки и идите к огням берегового дока. Напарник приземлится рядом.","answers":["Понятно. Что после стыковки?","Почему не посадить нас прямо в док?"],"replies":["Получите доступ к сети баз. Следующую соседнюю базу выбираете сами — пути разные.","Причальный коридор закрыт обломками. Вертолёты не смогут зависнуть внутри периметра."]},
- {"speaker":"КЕДР / ДАНИИЛ КРАВЦОВ","role":"ГРУППОВОЙ КАНАЛ · ЗА 20 СЕКУНД ДО СБРОСА","body":"Вижу твой транспорт слева. После отцепления не дёргай приводы: дай машине принять удар. Два стика — твои руки. Двойной тап с удержанием по свободной стороне — шаг; можно включить наклон в настройках. На карте нет одной обязательной дороги. Но сейчас доберёмся до берега.","answers":["Первый. К высадке готов.","Принял. Веди меня по эфиру."],"replies":["Кедр готов. Замки — на отцепление.","Буду рядом. Главное — возвращайся на связь."]}
-]
+const Prologue = preload("res://scripts/story/prologue_script.gd")
+const Cinematic = preload("res://scripts/ui/prologue_view.gd")
+const BRIEFING = Prologue.SCENES
+var cinematic: Control
+var briefing_phase := "question"
+var briefing_skipped := false
 class SignaturePad extends Control:
  signal changed(valid: bool)
  var lines: Array[PackedVector2Array] = []
@@ -78,9 +77,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
  clock += delta
  if is_instance_valid(dialogue_text):
-  type_clock += delta;dialogue_text.visible_characters = int(type_clock*52)
+  if dialogue_text.visible_characters >= 0:
+   type_clock += delta;dialogue_text.visible_characters = -1 if bool(SettingsManager.get_value("video/reduced_motion")) else int(type_clock*46)
  queue_redraw()
 func _draw() -> void:
+ if step == 2: return
  draw_rect(Rect2(Vector2.ZERO,size),Color("02070c"))
  for x in range(0,int(size.x),54): draw_line(Vector2(x,0),Vector2(x,size.y),Color(.20,.40,.52,.025),1)
  # A ghosted corporate mark and scan line sit behind the digital document.
@@ -96,6 +97,9 @@ func _draw() -> void:
 func _rebuild() -> void:
  for node in get_children(): remove_child(node);node.queue_free()
  dialogue_text = null
+ cinematic = null
+ if step == 2:
+  _briefing();return
  var margin := MarginContainer.new();add_child(margin);margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
  for edge in ["left","right"]: margin.add_theme_constant_override("margin_"+edge,38)
  margin.add_theme_constant_override("margin_top",18);margin.add_theme_constant_override("margin_bottom",49)
@@ -125,7 +129,7 @@ func _identity() -> void:
  form.add_child(UI.section_title("ФАМИЛИЯ"));form_family = LineEdit.new();form_family.name = "FamilyName";form_family.placeholder_text = "Фамилия пилота";form_family.max_length = 30;form_family.text = family_name;form_family.custom_minimum_size.y = 52;form.add_child(form_family)
  error_label = UI.paragraph("",14,UI.RED);form.add_child(error_label)
  next_button = UI.primary("ПЕРЕЙТИ К СОГЛАШЕНИЮ",_identity_next);form.add_child(next_button)
- var info := UI.column(12);info.add_child(UI.section_title("ПРОГРАММА «ОПЛОТ»"));info.add_child(UI.heading("Одна машина.\nОдин пилот.\nОдна группа.",27));info.add_child(UI.paragraph("Статус: кандидат допущен\nМашина: АТ-01 «Горизонт»\nГруппа: Первый / Кедр\nСектор: Пограничный пояс",16));row.add_child(UI.panel(info,23))
+ var info := UI.column(12);info.add_child(UI.section_title("ПРОГРАММА «ОПЛОТ»"));info.add_child(UI.heading("Одна машина.\nОдин пилот.\nОдна группа.",27));info.add_child(UI.paragraph("Статус: кандидат допущен\nМашина: АТ-01 «Оплот»\nГруппа: Первый / Кедр\nСектор: Пограничный пояс",16));row.add_child(UI.panel(info,23))
  form_family.text_submitted.connect(func(_text: String) -> void: _identity_next());form_first.text_submitted.connect(func(_text: String) -> void: form_family.grab_focus())
  form_first.grab_focus()
 func _identity_next() -> void:
@@ -160,39 +164,45 @@ func _contract() -> void:
  if compact: next_button.custom_minimum_size.y = 44;next_button.add_theme_font_size_override("font_size",14)
  signature_pad.changed.connect(func(valid: bool) -> void: next_button.disabled = not valid;status.text = "ПОДПИСЬ ПРИНЯТА / ГОТОВО К ОТПРАВКЕ" if valid else "ОЖИДАЕТСЯ РУКОПИСНАЯ ОТМЕТКА")
 func _sign_next() -> void:
+ if step != 1 or not is_instance_valid(signature_pad): return
  if signature_pad.length_drawn <= 8: return
- strokes = signature_pad.export_signature();step = 2;dialogue_index = 0;_rebuild()
+ strokes = signature_pad.export_signature();step = 2;dialogue_index = 0;briefing_phase = "question";briefing_skipped = false;_rebuild()
 func _briefing() -> void:
- var compact := size.y < 620
- if compact: content.add_theme_constant_override("separation",7)
- var entry: Dictionary = BRIEFING[dialogue_index]
- if not compact: content.add_child(UI.spacer(12));content.add_child(UI.micro("● ЗАЩИЩЁННЫЙ КАНАЛ   /   %02d:%02d   /   ПАКЕТ %d–5"%[22,40+dialogue_index,dialogue_index+1]))
- var speaker_row := UI.row(22);content.add_child(speaker_row)
- var face := _speaker_portrait(1 if dialogue_index in [1,4] else (2 if dialogue_index == 2 else 0));speaker_row.add_child(face)
- if compact: face.custom_minimum_size = Vector2(64,76)
- var speaker_info := UI.column(8);speaker_row.add_child(speaker_info)
- speaker_info.add_child(UI.micro("ПРЯМОЕ ПОДКЛЮЧЕНИЕ / RX SECURE"));speaker_info.add_child(UI.heading(str(entry.speaker),22 if compact else 27));speaker_info.add_child(UI.micro(entry.role));speaker_info.add_child(UI.label("▂ ▃ ▅ ▃ ▂ ▄ ▆ ▃ ▂     СВЯЗЬ УСТОЙЧИВАЯ",11,UI.CYAN));content.add_child(UI.rule())
- if dialogue_index > 0:
-  var previous: Dictionary = BRIEFING[dialogue_index-1];var selected := int(choices.get(str(dialogue_index-1),0))
-  content.add_child(UI.paragraph(previous.replies[selected],15,UI.CYAN))
- dialogue_text = UI.paragraph(str(entry.body).replace("{pilot}",first_name+" "+family_name),18 if compact else 22,UI.TEXT);dialogue_text.custom_minimum_size.y = 72 if compact else 116;content.add_child(dialogue_text);type_clock = 0;dialogue_text.visible_characters = 0
- content.add_child(UI.micro("ВАШ ОТВЕТ"))
- for i in range(entry.answers.size()):
-  var b := UI.button("%02d   /   %s"%[i+1,entry.answers[i]],_answer.bind(i));b.alignment = HORIZONTAL_ALIGNMENT_LEFT;b.add_theme_font_size_override("font_size",14 if compact else 16);content.add_child(b)
-  if compact: b.custom_minimum_size.y = 44
- error_label = UI.paragraph("",14,UI.RED);content.add_child(error_label);error_label.visible = false
+ cinematic = Cinematic.new();add_child(cinematic);cinematic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+ cinematic.answer_selected.connect(_answer);cinematic.continue_requested.connect(_advance_briefing)
+ cinematic.skip_requested.connect(_skip_briefing);cinematic.previous_requested.connect(_back)
+ error_label = UI.paragraph("",14,UI.RED);error_label.position = Vector2(48,62);error_label.size = Vector2(850,44);cinematic.add_child(error_label);error_label.hide()
+ _refresh_briefing()
+func _refresh_briefing() -> void:
+ cinematic.present(BRIEFING[dialogue_index],dialogue_index,briefing_phase,int(choices.get(str(dialogue_index),0)),first_name+" "+family_name)
+ dialogue_text = cinematic.body;type_clock = 0
+ AudioManager.play_briefing_radio()
 func _answer(index: int) -> void:
+ if submitting or briefing_phase != "question" or index < 0 or index >= BRIEFING[dialogue_index].answers.size(): return
+ choices[str(dialogue_index)] = index;briefing_phase = "reply";_refresh_briefing()
+func _advance_briefing() -> void:
  if submitting: return
- choices[str(dialogue_index)] = index
- if dialogue_index+1 < BRIEFING.size(): dialogue_index += 1;_rebuild();return
+ if briefing_phase == "summary": _launch_campaign();return
+ if briefing_phase != "reply": return
+ if dialogue_index+1 < BRIEFING.size(): dialogue_index += 1;briefing_phase = "question"
+ else: briefing_phase = "summary"
+ _refresh_briefing()
+func _skip_briefing() -> void:
+ if submitting or step != 2 or strokes.is_empty(): return
+ briefing_skipped = true;briefing_phase = "summary";_refresh_briefing()
+func _launch_campaign() -> void:
+ if submitting or step != 2 or briefing_phase != "summary" or strokes.is_empty(): return
  submitting = true
- if not Expedition.new_campaign(first_name,family_name,strokes,choices): error_label.visible = true;error_label.text = Expedition.last_error;submitting = false;return
+ if not Expedition.new_campaign(first_name,family_name,strokes,choices,briefing_skipped):
+  error_label.visible = true;error_label.text = Expedition.last_error;submitting = false;return
  NavigationManager.go(&"expedition")
 func _back() -> void:
+ if submitting: return
  if step == 2:
-  if dialogue_index > 0: dialogue_index -= 1
-  else: step = 1
-  _rebuild()
+  if briefing_phase == "summary": briefing_phase = "reply" if choices.has(str(dialogue_index)) else "question";_refresh_briefing()
+  elif briefing_phase == "reply": briefing_phase = "question";_refresh_briefing()
+  elif dialogue_index > 0: dialogue_index -= 1;briefing_phase = "question";_refresh_briefing()
+  else: step = 1;_rebuild()
  elif step == 1: step = 0;_rebuild()
  else: NavigationManager.go(&"campaign")
 func handle_back() -> bool: _back();return true

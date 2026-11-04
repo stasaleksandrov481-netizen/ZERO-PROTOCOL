@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1_ie3ub")
 id = &"at01"
-display_name = "АТ-01 «ГОРИЗОНТ»"
+display_name = "АТ-01 «ОПЛОТ»"
 class_tag = &"starter"
 mass_tonnes = 92.0
 base_stats = Dictionary[StringName, float]({

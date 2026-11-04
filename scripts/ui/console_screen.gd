@@ -21,7 +21,7 @@ func _ready() -> void:
  var header := UI.row(18);header.name = "Header";column.add_child(header)
  var back := UI.icon_button("back",NavigationManager.back,"В главное меню");back.name = "Back";header.add_child(back)
  var titles := UI.column(3);header.add_child(titles)
- titles.add_child(UI.heading({"operations":"ОПЕРАЦИИ / СЕКТОР 01","hangar":"АНГАР / ГОРИЗОНТ","archive":"БОРТОВОЙ АРХИВ"}.get(kind,"ОПЛОТ"),28))
+ titles.add_child(UI.heading({"operations":"ОПЕРАЦИИ / СЕКТОР 01","hangar":"АНГАР / ОПЛОТ","archive":"БОРТОВОЙ АРХИВ"}.get(kind,"ОПЛОТ"),28))
  titles.add_child(UI.micro("ENTERA / ПРОГРАММА «ОПЛОТ»"))
  header.add_child(UI.label("%d CR"%Expedition.credits,20,Color("c9bc96")))
  content = UI.row(24);content.size_flags_vertical = Control.SIZE_EXPAND_FILL;column.add_child(content)
@@ -56,7 +56,7 @@ func _operations() -> void:
 func _archive() -> void:
  var side := UI.column(14);side.custom_minimum_size.x = 260;side.size_flags_horizontal = Control.SIZE_FILL;content.add_child(side)
  side.add_child(UI.section_title("СВОДКА / 2089"));side.add_child(UI.heading("ПРОГРАММА\n«ОПЛОТ»",26))
- side.add_child(UI.paragraph("Эксперимент на объекте «Горизонт» нарушил границу реальностей. ЭНТЕРА развёртывает Атлантов для защиты путей снабжения и эвакуации.",17,UI.TEXT))
+ side.add_child(UI.paragraph("После инцидента на объекте «Горизонт» связь с частью побережья потеряна. ЭНТЕРА удерживает базы, пути снабжения и эвакуационные коридоры. Причины инцидента — за отдельным допуском.",17,UI.TEXT))
  side.add_child(UI.rule());side.add_child(UI.micro("ПОСЕЩЕНО БАЗ: %d"%Expedition.visited.size()));side.add_child(UI.micro("ЗАПИСЕЙ СВЯЗИ: %d"%Expedition.radio_log.size()))
  var log := _scroll_column(content);log.add_child(UI.heading("ЖУРНАЛ ПИЛОТА",26))
  if Expedition.flags.get("AERIAL_LANDING_DONE",false):
@@ -79,7 +79,7 @@ func _hangar() -> void:
  preview_actor = load("res://scripts/models/at01_2d_builder.gd").new().create();world.add_child(preview_actor)
  preview_col.add_child(UI.micro("ОСМОТР УЗЛОВ / ГОЛОВА · КОРПУС · КОНЕЧНОСТИ"))
  var side := UI.column(10);side.custom_minimum_size.x = 306;side.size_flags_horizontal = Control.SIZE_FILL;content.add_child(side)
- side.add_child(UI.heading("ГОРИЗОНТ",34));side.add_child(UI.micro("ENTERA / АТ-01"));side.add_child(UI.paragraph("Базовый Атлант программы «Оплот». Два независимых привода рук, отдельная головная кабина и механические ограничители.",17,UI.TEXT))
+ side.add_child(UI.heading("ОПЛОТ",34));side.add_child(UI.micro("ENTERA / АТ-01"));side.add_child(UI.paragraph("Базовый Атлант программы «Оплот». Два независимых привода рук, отдельная головная кабина и механические ограничители.",17,UI.TEXT))
  side.add_child(UI.rule());side.add_child(UI.heading("92 Т",28));side.add_child(UI.micro("12 ФИЗИЧЕСКИХ УЗЛОВ / 11 ШАРНИРОВ"))
  side.add_child(UI.section_title("ВЫБРАТЬ УЗЕЛ"))
  var nodes := UI.row(7);side.add_child(nodes)

@@ -152,7 +152,7 @@ func _physics_process(delta: float) -> void:
   var stick = left_stick if index == 0 else right_stick
   robot.hand_engaged[index] = stick.touch_index >= 0 or stick.mouse_active or mouse_hands[index]
   if mouse_hands[index]: robot.hand_world[index] = _mouse_world(aim_point)
- $HUD/Top/Status.text = "АТ-01  /  ГОРИЗОНТ  /  %.1f м/с" % (absf(robot.core.linear_velocity.x)/64.0)
+ $HUD/Top/Status.text = "АТ-01  /  ОПЛОТ  /  %.1f м/с" % (absf(robot.core.linear_velocity.x)/64.0)
 
 func set_camera_zoom(value: float) -> void:
  target_zoom = clampf(value,CAMERA_MIN,CAMERA_MAX)

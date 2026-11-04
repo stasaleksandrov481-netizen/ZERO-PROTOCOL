@@ -19,6 +19,8 @@ var landing_poses: Dictionary = {}
 var companion_poses: Dictionary = {}
 var order_clock := 0.0
 var retrying := false
+var field_guide: Control
+var landing_audio: AudioStreamPlayer
 func _ready() -> void:
  route = Expedition.active_route();stage = Expedition.checkpoint;route_id = &"expedition";training = false
  landing = route.get("id","") == "DROP" and stage == "landing"
@@ -51,6 +53,7 @@ func _ready() -> void:
  robot.impact.connect(_on_impact)
  AudioManager.set_expedition_active(true)
  if landing:
+  landing_audio = preload("res://scripts/systems/transport_ambience.gd").new();landing_audio.briefing_mix = false;landing_audio.name = "LandingRotors";add_child(landing_audio)
   robot.set_enabled(false);companion.set_enabled(false);left_stick.active = false;right_stick.active = false
   for key: String in robot.parts: landing_poses[key] = robot.parts[key].transform
   for key: String in companion.parts: companion_poses[key] = companion.parts[key].transform
@@ -59,6 +62,14 @@ func _ready() -> void:
  else:
   _radio("КЕДР / ДАНИИЛ","Кедр на связи. Иду на своей машине рядом. Путь на "+str(Expedition.NODES[str(route.to)].name)+" выбран тобой; держимся этой линии.")
  mission_ready = true;_mission_layout()
+ if route.get("id","") == "DROP" and stage in ["landing","road"] and not Expedition.flags.get("FIELD_GUIDE_DONE",false):
+  field_guide = preload("res://scripts/ui/field_guide.gd").new();field_guide.name = "FieldGuide";$HUD.add_child(field_guide)
+  field_guide.finished.connect(func() -> void: Expedition.flags["FIELD_GUIDE_DONE"] = true;Expedition.save_progress())
+  field_guide.visible = not landing;_layout_field_guide();$HUD.resized.connect(_layout_field_guide)
+func _layout_field_guide() -> void:
+ if not is_instance_valid(field_guide): return
+ field_guide.size = Vector2(minf(398,$HUD.size.x-650),108)
+ field_guide.position = Vector2(($HUD.size.x-field_guide.size.x)*.5,$HUD.size.y-231)
 func _boundaries(world: Node2D) -> void:
  for x: float in [-600.0,route_end+260]:
   var body := StaticBody2D.new();body.collision_layer = 1;body.position = Vector2(x,-800);world.add_child(body)
@@ -74,6 +85,7 @@ func _physics_process(delta: float) -> void:
  elapsed += delta
  if landing:
   landing_time += delta;var t := clampf((landing_time-1.8)/2.6,0,1)
+  if is_instance_valid(landing_audio): landing_audio.volume_db = lerpf(-29,-46,clampf((landing_time-3.8)/1.4,0,1))
   var offset_y := lerpf(-450,0,t*t)
   for key: String in landing_poses:
    var pose: Transform2D = landing_poses[key];pose.origin.y += offset_y;robot.parts[key].transform = pose
@@ -84,11 +96,16 @@ func _physics_process(delta: float) -> void:
   if landing_time > 4.5 and not chatter.has("splash"):
    chatter.splash = true;environment.splash(robot.core.position.x,1.0);environment.splash(companion.core.position.x,1.0);hit_feedback.hit(Vector2(0,-140),.7,Vector2.DOWN)
   if landing_time >= 5.2:
+   if is_instance_valid(landing_audio): landing_audio.stop();landing_audio.queue_free();landing_audio = null
    landing = false;environment.landing_phase = 1;set_camera_zoom(CAMERA_ZOOM);robot.set_enabled(true);companion.set_enabled(true);left_stick.active = true;right_stick.active = true
    Expedition.mark_checkpoint("road");stage = "road"
    _radio("КЕДР / ДАНИИЛ","Посадка есть. Я слева от тебя, на АТ-02. Проверь обе руки. Впереди огни ДОК-17 — идём к ним.")
+   if is_instance_valid(field_guide): field_guide.show()
   return
  var x: float = robot.core.position.x
+ if is_instance_valid(field_guide) and not field_guide.dismissed:
+  field_guide.observe(robot,delta)
+  if x > 1100: field_guide.dismiss()
  $HUD.health = integrity;$HUD.convoy = 100
  $HUD.progress.value = x;$HUD.progress.max_value = route_end
  $HUD.objective_meta.text = "%s / ДО ДОКА %d М"%[str(route.to),ceili(maxf(0,route_end-120-x)/64.0)]
@@ -151,6 +168,9 @@ func _to_map() -> void:
 func _set_order(value: String) -> void:
  Expedition.companion_order = value;Expedition.save_progress();$HUD/Top/Crew.text = "КЕДР / "+value.to_upper()
  _radio("КЕДР / ДАНИИЛ",{"Прикрывай":"Прикрою подход.","Атакуй":"Отвлеку его. Последний удар за тобой.","Ко мне":"Иду к тебе."}.get(value,"Принял."))
+func _set_paused(value: bool,show_overlay: bool = true) -> void:
+ super._set_paused(value,show_overlay)
+ if is_instance_valid(landing_audio): landing_audio.stream_paused = value
 func open_radio_history() -> void:
  history_was_paused = paused;_set_paused(true,false);$HUD.show_history(Expedition.radio_log)
 func is_range_ready() -> bool:
