@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 config/name="RIFT: ZERO PROTOCOL"
-config/version="0.12.0-heavy-tide"
+config/version="0.13.0-impact-mass"
 run/main_scene="res://scenes/boot/boot.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://assets/icons/app_icon.svg"
@@ -31,6 +31,8 @@ window/energy_saving/keep_screen_on=true
 ui_cancel={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":4194305)]}
 future_move_left={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":65)]}
 future_move_right={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":68)]}
+future_run={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194325)]}
+future_recover={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":82)]}
 future_left_hand={"deadzone":0.2,"events":[]}
 future_right_hand={"deadzone":0.2,"events":[]}
 

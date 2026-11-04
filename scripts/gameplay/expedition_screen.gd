@@ -38,12 +38,13 @@ func _ready() -> void:
  companion.planted.connect(func(point: Vector2,strength: float) -> void:
   if not landing: environment.splash(point.x,maxf(.5,strength*.85)))
  robot.planted.connect(_planted)
- companion.impact.connect(func(_point: Vector2,strength: float,_direction: Vector2,target_body: PhysicsBody2D) -> void:
-  if target_body == enemy and is_instance_valid(enemy): enemy.register_hit(strength,true))
- enemy = load("res://scripts/gameplay/klyk_2d.gd").new();enemy.name = "Klyk";enemy.position = Vector2(3470,-255);enemy.target = robot;world.add_child(enemy)
+ companion.impact.connect(func(point: Vector2,strength: float,direction: Vector2,target_body: PhysicsBody2D) -> void:
+  if target_body == enemy and is_instance_valid(enemy): enemy.register_hit(strength,true,direction,point))
+ enemy = load("res://scripts/gameplay/klyk_2d.gd").new();enemy.name = "Klyk";enemy.position = Vector2(3470,-330);enemy.target = robot;world.add_child(enemy)
  if not enemy.initialized:
   startup_stage = "Загрузка Клыка";startup_error = enemy.startup_error;return
  enemy.set_enabled(stage == "fight");enemy.landed.connect(_enemy_landed);enemy.defeated.connect(_enemy_defeated)
+ enemy.planted.connect(func(point: Vector2,strength: float) -> void: environment.splash(point.x,strength))
  if stage in ["arrival","mayak","base"]: enemy.state = "dead";enemy.hide();enemy.collision_layer = 0
  _boundaries(world)
  $HUD/Top/Back.pressed.disconnect(NavigationManager.back);$HUD/Top/Back.pressed.connect(_to_map)
@@ -108,6 +109,7 @@ func _physics_process(delta: float) -> void:
   field_guide.observe(robot,delta)
   if x > 1100: field_guide.dismiss()
  $HUD.health = integrity;$HUD.convoy = 100
+ $HUD.enemy = enemy
  $HUD.progress.value = x;$HUD.progress.max_value = route_end
  $HUD.objective_meta.text = "%s / ДО ДОКА %d М"%[str(route.to),ceili(maxf(0,route_end-120-x)/64.0)]
  if x > 600 and not chatter.has("first_walk"):
@@ -129,15 +131,19 @@ func _companion_tick(delta: float) -> void:
  if Expedition.companion_order == "Атакуй" and is_instance_valid(enemy) and enemy.enabled: goal = enemy.position.x-180
  var dx: float = goal-companion.core.position.x
  companion.walk_axis = clampf(dx/110,-1,1) if absf(dx) > 60 else 0
+ companion.run_requested = absf(dx) > 560 or (robot.run_blend > .35 and absf(dx) > 100)
  if is_instance_valid(enemy) and enemy.enabled and absf(enemy.position.x-companion.core.position.x) < 430 and Expedition.companion_order != "Ко мне":
   var phase := order_clock*2.1
   companion.hand_input[1] = Vector2(cos(phase),sin(phase))*.94;companion.hand_engaged[1] = true
  else: companion.hand_input[1] = Vector2.ZERO;companion.hand_engaged[1] = false
-func _on_impact(_point: Vector2,strength: float,_direction: Vector2,target_body: PhysicsBody2D) -> void:
- if target_body == enemy and is_instance_valid(enemy): enemy.register_hit(strength)
+func _on_impact(point: Vector2,strength: float,direction: Vector2,target_body: PhysicsBody2D) -> void:
+ if target_body == enemy and is_instance_valid(enemy): enemy.register_hit(strength,false,direction,point)
 func _enemy_landed(strength: float) -> void:
  if paused or landing: return
- integrity = maxf(0,integrity-strength*55);robot.core.set_meta("integrity",integrity)
+ var defender: Node2D = enemy.last_defender if is_instance_valid(enemy.last_defender) else robot
+ defender.receive_impact(strength,enemy.last_hit_direction,enemy.last_hit_point)
+ if defender != robot: return
+ integrity = maxf(0,integrity-strength*22);robot.core.set_meta("integrity",integrity)
  hit_feedback.hit(robot.core.position,strength*1.7,Vector2.LEFT)
  if environment.biome == "sea": environment.splash(robot.core.position.x,.65)
 func _enemy_defeated() -> void:

@@ -91,20 +91,38 @@ func _run() -> void:
  for i in range(220): game.environment.splash(float(i),1)
  check(game.environment.splashes.size() <= game.environment.MAX_SPRAY and game.environment.wakes.size() <= 16,"water effects have fixed particle limits")
  # Exercise the real collision -> impact signal -> hostile damage path.
- var shift: float = game.enemy.position.x-500-game.robot.core.position.x
- for body in game.robot.parts.values(): body.position.x += shift
+ var battle_x: float = game.enemy.position.x-500
+ for actor in [game.robot,game.companion]:
+  var spawn: Transform2D = actor.initial_poses["Core"]
+  var offset: float = battle_x-spawn.origin.x-(350 if actor == game.companion else 0)
+  actor.reset_cooldown = 3
+  for key: String in actor.parts:
+   var pose: Transform2D = actor.initial_poses[key];pose.origin.x += offset
+   actor.parts[key].reset_pose = pose;actor.parts[key].reset_requested = true
+ game.enemy.rng.seed = 9;game.enemy.balance.rng.seed = 12;game.robot.balance.rng.seed = 7
  game.enemy.set_enabled(true);game.stage = "fight"
- right.touch_index = 12
- Input.action_press("future_move_right")
- for i in range(2200):
-  if game.enemy.state == "dead": break
-  var phase := i%260
-  var aim := Vector2(-.6,.45) if phase < 90 else Vector2(.95,-.55)
-  right._update_value(right.origin+aim*right.radius)
-  if i%260 == 259: print("PUNCH_METRICS ",game.robot.arm_goals[1]," actual=",game.robot.parts.RightUpperArm.rotation-game.robot.core.rotation,",",game.robot.parts.RightForearm.rotation-game.robot.parts.RightUpperArm.rotation," contact=",game.robot.parts.RightForearm.opponent_impulse," positions=",game.robot.parts.RightForearm.position," enemy=",game.enemy.position," HP=",game.enemy.health)
+ var battle_started: float = game.elapsed
+ right.touch_index = 12;left.touch_index = 11
+ for i in range(12000):
+  if game.enemy.state == "dead" or game.integrity <= 0: break
+  var distance: float = game.enemy.position.x-game.robot.core.position.x
+  Input.action_release("future_move_right");Input.action_release("future_move_left");Input.action_release("future_run")
+  if not game.robot.fallen:
+   if distance > 330: Input.action_press("future_move_right")
+   elif distance < 290: Input.action_press("future_move_left")
+   if distance > 520: Input.action_press("future_run")
+   for hand: int in [0,1]:
+    var phase: int = (i+hand*90)%180
+    var aim := Vector2(-.85,.60) if phase < 65 else Vector2(1,-.42)
+    var stick = left if hand == 0 else right
+    stick._update_value(stick.origin+aim*stick.radius)
+  else:
+   left.value = Vector2.ZERO;right.value = Vector2.ZERO
+  if i%1200 == 1199: print("BATTLE_METRICS t=",game.elapsed-battle_started," enemy=",game.enemy.health," player=",game.integrity," distance=",distance," AI=",game.enemy.behavior," balance=",game.robot.balance.state)
   await get_tree().physics_frame
- Input.action_release("future_move_right");right.release()
- print("COMBAT POSITION ",game.robot.core.position," vs ",game.enemy.position)
+ Input.action_release("future_move_right");Input.action_release("future_move_left");Input.action_release("future_run");right.release();left.release()
+ print("COMBAT POSITION ",game.robot.core.position," vs ",game.enemy.position," DURATION ",game.elapsed-battle_started)
+ check(game.elapsed-battle_started >= 40,"full physical battle lasts at least forty seconds")
  check(game.enemy.health <= 0,"physical fist combat defeats the hostile")
  check(game.stage == "arrival","real victory opens docking objective")
  print("COMBAT HEALTH ",game.enemy.health," PLAYER ",game.integrity)

@@ -1,0 +1,63 @@
+{
+  "version": "0.13.0-impact-mass",
+  "engine": "Godot 4.7.2 stable",
+  "base_commit": "634eb2b67d20da27480fccc8b65c745c1ab6beb8",
+  "suites": {
+    "nightfall": {
+      "passed": 68,
+      "failed": 0
+    },
+    "assets": {
+      "passed": 33,
+      "failed": 0
+    },
+    "prologue": {
+      "passed": 42,
+      "failed": 0
+    },
+    "physics": {
+      "passed": 35,
+      "failed": 0
+    },
+    "dynamic": {
+      "passed": 25,
+      "failed": 0
+    }
+  },
+  "total_passed": 203,
+  "metrics": {
+    "real_physical_battle_seconds": 54.5,
+    "maximum_damage_minimum_seconds": 42.25,
+    "walk_distance_5_seconds_px": 611.6328125,
+    "run_distance_5_seconds_px": 895.882568359375,
+    "walk_gait_radians": 13.708125,
+    "run_gait_radians": 13.075278,
+    "idle_player_real_contact_attacks_in_9_seconds": 2
+  },
+  "clean_source_dynamic": {
+    "passed": 25,
+    "failed": 0,
+    "cache_previously_absent": true
+  },
+  "isolated_android_pck": {
+    "runtime_failures": 0,
+    "source_project_folder_empty": true,
+    "apk_tested": false,
+    "physical_android_tested": false
+  },
+  "captures": {
+    "combat_phone.png": "e6c914c6065bd5faf699446f6ff35e0e343534dbb97124580aeecfcb0bd83772",
+    "enemy_catch.png": "3a06e3aaef4de2d9b327ec74f007ac48e3e94381173b7acf19d025e67ec7b3d4",
+    "enemy_down.png": "6c515675a5e123bc7cce4e232e1733c4b85e1d20b1716ecc9c4f9ee31b3a188e",
+    "enemy_rising.png": "55dbde3ae979c5e8c1e1a807623665c82880e9be65d2f6107400d2e19c714309",
+    "enemy_rush.png": "51b3e09d05a291372a28e94f386b4996e8a12fc3b66e1da5661ecec9a0931695",
+    "heavy_run.png": "3e362922e5e5ddb6cdab3070488c936988dc6bb6380e33200df605b96a719819",
+    "player_catch.png": "d2370c415008e639054b1771a116bc343e7d131ffdcfb763675f64800475be78",
+    "player_down.png": "9276f7130002ef1ae5989430c5c3cd1f73f93330323f54e53568c6767a07f3a2",
+    "player_rising.png": "a82273886a9b65a34e16d9585b23268113cac58254764905a19f21a8ab5bcbe4",
+    "punch_down.png": "f7d5e52472e6f590942a83ae3ec17b410dfdc30467397e16a1f0f698621ea297",
+    "punch_straight.png": "a57f623ca485ea2f6b3b032400edab0d4379ebc1b8bc9223f06f94888fd7f508",
+    "punch_upper.png": "919f87fbd1fa20a6be0f470c867931e41223a93fc178beff8253ab6df6769c42",
+    "run_phone.png": "62b20670f3cbf1e4e0e1619c3723d4d265caaf47f642058fea011d2e8d04ac8b"
+  }
+}

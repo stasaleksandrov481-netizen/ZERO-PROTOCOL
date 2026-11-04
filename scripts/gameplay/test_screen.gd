@@ -103,15 +103,17 @@ func _ready() -> void:
  _apply_quality()
  AudioManager.set_test_active(true)
  if OS.has_feature("android"):
-  $HUD/Help.text = "Двойной тап с удержанием — ходьба\nДжойстики — кулаки 360° · отпустить — опустить"
+  $HUD/Help.text = "Двойной тап с удержанием — ходьба\nСтики — руки · БЕГ — длинный шаг"
   if config.scheme == InputConfig.Scheme.TILT:
-   $HUD/Help.text = "Наклон телефона — ходьба\nДжойстики — кулаки 360° · отпустить — опустить"
+   $HUD/Help.text = "Наклон телефона — ходьба\nСтики — руки · БЕГ — длинный шаг"
    if not config.sensor_available():
-    $HUD/Help.text = "Датчик недоступен · Двойной тап с удержанием — ходьба\nДжойстики — кулаки 360° · отпустить — опустить"
+    $HUD/Help.text = "Датчик недоступен · Двойной тап с удержанием — ходьба\nСтики — руки · БЕГ — длинный шаг"
  else:
-  $HUD/Help.text = "A / D — ходьба · ЛКМ / ПКМ — кулаки\nДжойстик — кулак 360° · Колесо / + − — камера"
+  $HUD/Help.text = "A / D — ходьба · ЛКМ / ПКМ — кулаки\nShift — тяжёлый бег · R — встать · Колесо — камера"
  $HUD.actor = robot
  $HUD.move_changed.connect(func(axis: float) -> void: mobile_walk = axis)
+ $HUD.run_button.pressed.connect(func() -> void:
+  if robot.fallen: robot.request_recovery();$HUD.run_button.set_pressed_no_signal(false))
  $HUD.resume_requested.connect(_resume_ui)
  $HUD.restart_requested.connect(_restart_ui)
  $HUD.leave_requested.connect(_leave_ui)
@@ -145,6 +147,8 @@ func _physics_process(delta: float) -> void:
   axis = config.sample_walk_axis()
  elif mobile_walk != 0: axis = mobile_walk
  robot.walk_axis = axis
+ robot.run_requested = Input.is_action_pressed("future_run") or $HUD.run_button.button_pressed
+ if Input.is_action_just_pressed("future_recover"): robot.request_recovery()
  robot.hand_input[0] = left_stick.value
  robot.hand_input[1] = right_stick.value
  for index in range(2):
@@ -152,7 +156,8 @@ func _physics_process(delta: float) -> void:
   var stick = left_stick if index == 0 else right_stick
   robot.hand_engaged[index] = stick.touch_index >= 0 or stick.mouse_active or mouse_hands[index]
   if mouse_hands[index]: robot.hand_world[index] = _mouse_world(aim_point)
- $HUD/Top/Status.text = "АТ-01  /  %d т  /  %.1f м/с" % [roundi(robot.total_mass),absf(robot.core.linear_velocity.x)/64.0]
+ var mode: String = {"stagger":"ЛОВЛЮ ОПОРУ","falling":"ПАДЕНИЕ","down":"НА ЗЕМЛЕ","rising":"ПОДЪЁМ"}.get(robot.balance.state,"БЕГ" if robot.run_blend > .35 else "ШАГ")
+ $HUD/Top/Status.text = "АТ-01 / %d т / %.1f м/с / %s" % [roundi(robot.total_mass),absf(robot.core.linear_velocity.x)/64.0,mode]
 
 func set_camera_zoom(value: float) -> void:
  target_zoom = clampf(value,CAMERA_MIN,CAMERA_MAX)
@@ -320,6 +325,8 @@ func _release_input() -> void:
  walking_touch = -1
  free_touches.clear();pinch_distance = 0;last_taps.clear()
  robot.walk_axis = 0
+ robot.run_requested = false
+ $HUD.run_button.set_pressed_no_signal(false)
  robot.hand_input.assign([Vector2.ZERO,Vector2.ZERO])
  robot.world_aim.assign([false,false])
  robot.hand_engaged.assign([false,false])

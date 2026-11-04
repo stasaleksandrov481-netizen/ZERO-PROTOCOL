@@ -21,7 +21,7 @@ var rain: Node2D
 var foreground: Node2D
 var view := Rect2(-1600,-1100,3200,1500)
 const WATER_Y := -145.0
-const MAX_SPRAY := 320
+const MAX_SPRAY := 500
 var last_splashes: Dictionary = {}
 class FrontEffects extends Node2D:
  var environment: Node2D
@@ -61,7 +61,7 @@ func surface_y(x: float) -> float:
  var y := WATER_Y+sin(x*.013+clock*1.3)*2.4+sin(x*.031-clock)*1.2
  for wake: Dictionary in wakes:
   var front: float = absf(x-float(wake.x))-float(wake.age)*175.0
-  y += sin(front*.07)*exp(-absf(front)*.017)*(1-float(wake.age)/2.4)*float(wake.strength)*13
+  y += sin(front*.07)*exp(-absf(front)*.017)*(1-float(wake.age)/2.4)*float(wake.strength)*20
  return y
 func splash(x: float,strength: float = .5) -> void:
  if biome != "sea": return
@@ -74,12 +74,12 @@ func splash(x: float,strength: float = .5) -> void:
  last_splash = clock
  if wakes.size() >= 16: wakes.pop_front()
  wakes.append({"x":x,"age":0.0,"strength":strength})
- var count := 46 if strength < .9 else 84
+ var count := 90 if strength < .9 else 156
  if int(SettingsManager.get_value("video/quality")) == 0: count = int(count*.65)
  for i in range(count):
   if splashes.size() >= MAX_SPRAY: splashes.pop_front()
   var t := float(i)/count
-  splashes.append({"point":Vector2(x+sin(i*21.2)*30,WATER_Y),"velocity":Vector2((t-.5)*(220+strength*220),-85-absf(sin(i*8.1))*(125+strength*190)),"age":0.0,"life":.65+absf(sin(i*3.4))*.55})
+  splashes.append({"point":Vector2(x+sin(i*21.2)*42,WATER_Y),"velocity":Vector2((t-.5)*(310+strength*260),-100-absf(sin(i*8.1))*(180+strength*240)),"age":0.0,"life":.80+absf(sin(i*3.4))*.55,"size":1.1+absf(sin(i*4.2))*1.6})
  if AudioManager.has_method("play_splash"): AudioManager.play_splash(strength)
 func _draw() -> void:
  if atlas == null: return
@@ -127,6 +127,21 @@ func draw_effects(canvas: Node2D) -> void:
    var x := view.position.x-20+float(i)/99*(view.size.x+40);edge.append(Vector2(x,surface_y(x)))
   canvas.draw_polyline(edge,Color(.53,.77,.82,.55),2,true)
  for wake: Dictionary in wakes:
+  # Side-view sheets carry the displaced water; fine drops sit over their broken crests.
+  # They share the same fixed wake budget and never become perspective rings.
+  var phase: float = clampf(wake.age/.72,0,1)
+  if phase < 1:
+   var height: float = sin(phase*PI)*(100+wake.strength*160)
+   var spread: float = 35+wake.age*(220+wake.strength*140)
+   for side: int in [-1,1]:
+    var sheet := PackedVector2Array()
+    for j in range(22):
+     var u := float(j)/21
+     var crest: float = sin(u*PI)*(.70+.16*sin(u*9+phase*4)+.12*sin(u*19-phase*3))
+     sheet.append(Vector2(wake.x+side*(8+u*spread),WATER_Y-crest*height))
+    canvas.draw_colored_polygon(sheet,Color(.28,.53,.63,(1-phase)*.19))
+    canvas.draw_polyline(sheet,Color(.72,.88,.93,(1-phase)*.25),1.1,true)
+   canvas.draw_line(Vector2(wake.x-spread*.70,WATER_Y),Vector2(wake.x+spread*.70,WATER_Y),Color(.81,.94,.95,(1-phase)*.55),5+wake.strength*8,true)
   var radius: float = 18+wake.age*175
   for direction: int in [-1,1]:
    var x: float = wake.x+direction*radius
@@ -135,7 +150,9 @@ func draw_effects(canvas: Node2D) -> void:
   canvas.draw_line(Vector2(wake.x-foam_width,WATER_Y-1),Vector2(wake.x+foam_width,WATER_Y-1),Color(.65,.85,.89,maxf(0,1-wake.age/1.2)*.45),3,true)
  for spray: Dictionary in splashes:
   var alpha: float = 1-spray.age/spray.life
-  canvas.draw_line(spray.point,spray.point-spray.velocity*.025,Color(.73,.88,.93,alpha*.82),2.2,true)
+  var width: float = float(spray.get("size",2.2))
+  canvas.draw_line(spray.point,spray.point-spray.velocity*.018,Color(.73,.88,.93,alpha*.72),width,true)
+  canvas.draw_circle(spray.point,width*.55,Color(.80,.94,.97,alpha*.62))
  # Shore marker lights and their broken reflections stay in world coordinates.
  if biome == "sea":
   for i in range(floori(view.position.x/780),ceili(view.end.x/780)+1):

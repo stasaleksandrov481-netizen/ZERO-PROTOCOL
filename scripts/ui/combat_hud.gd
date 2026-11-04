@@ -10,6 +10,10 @@ signal restart_requested
 signal leave_requested
 signal order_selected(value: String)
 var actor: Node2D
+var enemy: Node2D
+var run_button: Button
+var enemy_intent: Label
+var enemy_health: ProgressBar
 var mission := false
 var paused := false
 var overlay := ""
@@ -73,6 +77,9 @@ func _ready() -> void:
  left_walk.tooltip_text = "Шаг влево / удерживать";right_walk.tooltip_text = "Шаг вправо / удерживать"
  left_walk.hold_changed.connect(func(value: bool) -> void: left_held = value;_movement())
  right_walk.hold_changed.connect(func(value: bool) -> void: right_held = value;_movement())
+ run_button = preload("res://scripts/ui/run_toggle.gd").new();run_button.text = "БЕГ";run_button.pressed.connect(func() -> void: AudioManager.play_ui());run_button.add_theme_font_size_override("font_size",13);run_button.tooltip_text = "Бег / Shift. При падении: встать / R.";add_child(run_button)
+ enemy_intent = UI.label("",13,UI.RED);enemy_intent.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER;add_child(enemy_intent);enemy_intent.hide()
+ enemy_health = ProgressBar.new();enemy_health.show_percentage = false;enemy_health.custom_minimum_size.y = 4;add_child(enemy_health);enemy_health.hide()
  radio = RadioView.new();radio.name = "Radio";add_child(radio);radio.bind(dispatcher);radio.history_requested.connect(func() -> void: history_requested())
  dispatcher.message_started.connect(func(message: Dictionary) -> void:
   if str(message.id) != last_radio_id: last_radio_id = str(message.id);AudioManager.play_radio())
@@ -87,7 +94,7 @@ func layout_hud() -> void:
  header.position = Vector2.ZERO;header.size = Vector2(size.x,64)
  $Top/Back.position = Vector2(17,12);$Top/Back.size = Vector2(58,46)
  title.position = Vector2(101,12);title.size = Vector2(size.x-530,28)
- $Top/Status.position = Vector2(102,41);$Top/Status.size = Vector2(350,18)
+ $Top/Status.position = Vector2(102,41);$Top/Status.size = Vector2(500,18)
  $Top/Settings.position = Vector2(size.x-67,13);$Top/Settings.size = Vector2(48,44)
  $Top/Pause.position = Vector2(size.x-130,13);$Top/Pause.size = Vector2(48,44)
  $Zoom.position = Vector2(size.x-315,13);$Zoom.size = Vector2(164,43)
@@ -105,7 +112,11 @@ func layout_hud() -> void:
  left_walk.position = Vector2(size.x*.5-197,size.y-60);left_walk.size = Vector2(76,42)
  right_walk.position = Vector2(size.x*.5+121,size.y-60);right_walk.size = Vector2(76,42)
  interact.position = Vector2(size.x*.5-150,size.y-126);interact.size = Vector2(300,48)
- $Help.position = Vector2(size.x*.5-195,size.y-106);$Help.size = Vector2(390,34)
+ $Help.position = Vector2(size.x*.5-195,size.y-173);$Help.size = Vector2(390,44)
+ run_button.position = Vector2(size.x*.5-64,size.y-116);run_button.size = Vector2(128,44)
+ var enemy_card := _enemy_card()
+ enemy_intent.position = enemy_card.position+Vector2(8,4);enemy_intent.size = Vector2(enemy_card.size.x-16,26)
+ enemy_health.position = enemy_card.position+Vector2(44,34);enemy_health.size = Vector2(enemy_card.size.x-88,5)
  # Active calls replace the right diagnostic card, leaving both fighters visible.
  radio.position = Vector2(size.x-442,85);radio.size = Vector2(420,194);radio.visible = mission
  radio.idle_button.position = Vector2(224,0);radio.idle_button.size = Vector2(196,44)
@@ -118,6 +129,12 @@ func _process(delta: float) -> void:
  if is_instance_valid(actor):
   $LeftStick.drive_load = actor.arm_load[0];$RightStick.drive_load = actor.arm_load[1]
   $LeftStick.queue_redraw();$RightStick.queue_redraw()
+  run_button.text = ("ВСТАТЬ" if OS.has_feature("android") else "ВСТАТЬ / R") if actor.fallen else ("БЕГ ВКЛ." if run_button.button_pressed else ("БЕГ" if OS.has_feature("android") else "БЕГ / SHIFT"))
+  run_button.visible = not interact.visible and overlay == ""
+ if is_instance_valid(enemy):
+  enemy_intent.visible = enemy.enabled and enemy.state != "dead";enemy_health.visible = enemy_intent.visible
+  enemy_intent.text = str(enemy.telegraph) if not str(enemy.telegraph).is_empty() else "КЛЫК / БРОНЯ И ЦЕЛОСТНОСТЬ"
+  enemy_health.max_value = enemy.MAX_HEALTH;enemy_health.value = enemy.health
  if mission and objective.text != last_objective:
   last_objective = objective.text
   if is_instance_valid(objective_tween): objective_tween.kill()
@@ -130,12 +147,17 @@ func _plate(rect: Rect2,alpha: float = .76,accent: bool = false) -> void:
  draw_colored_polygon(p,Color(.015,.042,.061,alpha));p.append(p[0]);draw_polyline(p,Color(.46,.67,.76,.55),1,true)
  draw_line(rect.position+Vector2(5,11),rect.position+Vector2(14,2),Color("d6ab5d") if accent else Color("6d9aa9"),2,true)
  draw_line(rect.position+Vector2(16,4),rect.position+Vector2(65,4),Color(.48,.68,.75,.20),1,true)
+func _enemy_card() -> Rect2:
+ var width := clampf(size.x-716.0,240,388)
+ var center := minf(size.x*.5,size.x-454-width*.5)
+ return Rect2(center-width*.5,79,width,45)
 func _draw() -> void:
  if not layout_ready: return
  var w := size.x
  var compact := size.y < 620
  _plate(Rect2(16,12,w-335,48),.54)
  draw_line(Vector2(83,20),Vector2(83,51),Color("c3a15c"),2)
+ if enemy_intent.visible: _plate(_enemy_card(),.76,true)
  if mission:
   _plate(Rect2(22,89,225,91),.80,true)
   # A quiet route trace gives direction and distance without covering the world.
@@ -147,12 +169,13 @@ func _draw() -> void:
   draw_string(UI.FONT,Vector2(36,diag_y+17),"АТ-01 / ТЕЛЕМЕТРИЯ",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("a7c1c9"))
   draw_line(Vector2(36,diag_y+24),Vector2(231,diag_y+24),Color(.48,.67,.73,.25),1)
   var load_value: float = actor.load_ratio if is_instance_valid(actor) else 0
+  var mobility: String = {"stagger":"ОПОРА","falling":"СБИТА","down":"НА ЗЕМЛЕ","rising":"ПОДЪЁМ"}.get(actor.balance.state,"НОРМА" if health > 30 else "КРИТИЧНО") if is_instance_valid(actor) else "НОРМА"
   var labels := ["ЦЕЛОСТНОСТЬ","РЕАКТОР","ДАВЛЕНИЕ","МОБИЛЬНОСТЬ"]
-  var values := ["%d %%"%ceili(health),"%.1f МВт"%(4.2+load_value*1.5),"%.1f МПа"%(22+load_value*12),"НОРМА" if health > 30 else "КРИТИЧНО"]
+  var values := ["%d %%"%ceili(health),"%.1f МВт"%(4.2+load_value*1.5),"%.1f МПа"%(22+load_value*12),mobility]
   for i in range(4):
    var y := diag_y+40+i*(15.0 if compact else 22.0)
    draw_circle(Vector2(40,y-4),3,Color("80b7c5"));draw_string(UI.FONT,Vector2(52,y),labels[i],HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("96afb9"))
-   draw_string(UI.MONO,Vector2(167,y),values[i],HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("a5d3ab") if i == 3 else UI.TEXT)
+   draw_string(UI.MONO,Vector2(167,y),values[i],HORIZONTAL_ALIGNMENT_LEFT,-1,11,(Color("a5d3ab") if mobility == "НОРМА" else Color("d7b167")) if i == 3 else UI.TEXT)
   if not radio.active or radio.collapsed: _hull_diagram(Rect2(w-223,143,201,122 if compact else 162))
  draw_polyline(PackedVector2Array([Vector2(0,size.y-42),Vector2(35,size.y-42),Vector2(49,size.y-22),Vector2(293,size.y-22),Vector2(308,size.y-37)]),Color(.38,.63,.73,.35),1,true)
  draw_polyline(PackedVector2Array([Vector2(w,size.y-42),Vector2(w-35,size.y-42),Vector2(w-49,size.y-22),Vector2(w-293,size.y-22),Vector2(w-308,size.y-37)]),Color(.38,.63,.73,.35),1,true)
@@ -188,7 +211,7 @@ func contains_pointer(point: Vector2) -> bool:
  if overlay != "" or is_instance_valid(settings_overlay): return true
  var guide := get_node_or_null("FieldGuide")
  if guide != null and guide.is_visible_in_tree() and guide.close_button.get_global_rect().has_point(point): return true
- var controls: Array[Control] = [$Top/Back,$Top/Pause,$Top/Settings,$Top/Balance,$Top/Reset,$Top/Impulse,$Zoom,$LeftStick,$RightStick,interact,left_walk,right_walk,crew]
+ var controls: Array[Control] = [$Top/Back,$Top/Pause,$Top/Settings,$Top/Balance,$Top/Reset,$Top/Impulse,$Zoom,$LeftStick,$RightStick,interact,left_walk,right_walk,crew,run_button]
  for node: Control in controls:
   if node.is_visible_in_tree() and Rect2(Vector2.ZERO,node.size).has_point(node.get_global_transform_with_canvas().affine_inverse()*point): return true
  if mission:
@@ -220,7 +243,7 @@ func show_pause() -> void:
  var content := _modal("pause")
  content.add_child(UI.micro("ОПЛОТ / ЛОКАЛЬНЫЙ КОНТУР"));content.add_child(UI.heading("ПАУЗА",38))
  content.add_child(UI.paragraph(title.text,16))
- if mission: content.add_child(UI.paragraph("Руки: два стика или ЛКМ / ПКМ. Ходьба: стрелки или A / D.\nНа телефоне — двойной тап с удержанием по свободной стороне.\nКедр: кнопка группового канала. Пролог и эфир: журнал связи.",14,UI.CYAN))
+ if mission: content.add_child(UI.paragraph("Руки: отведите стик назад и вынесите вперёд. Вверх — удар снизу.\nШаг: стрелки / A, D. Бег: кнопка «БЕГ» / Shift. Встать: R.\nКедр: групповой канал. Важные сведения: журнал связи.",14,UI.CYAN))
  content.add_child(UI.primary("ПРОДОЛЖИТЬ",func() -> void: resume_requested.emit()))
  var row := UI.row(10);content.add_child(row)
  row.add_child(UI.button("КОНТРОЛЬНАЯ ТОЧКА" if mission else "СБРОС ПОЛИГОНА",func() -> void: restart_requested.emit()))

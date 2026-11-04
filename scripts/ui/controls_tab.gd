@@ -10,6 +10,7 @@ func _ready() -> void:
 	add_choice("input/scheme",tr("WALK_SCHEME"),[tr("SCHEME_A_SHORT"),tr("SCHEME_B_SHORT")],[0,1],tr("WALK_HINT"))
 	var diagram := preload("res://scripts/ui/control_diagram.gd").new()
 	add_child(RiftUI.panel(diagram,10))
+	add_child(RiftUI.paragraph("БЕГ: включите кнопку над групповым каналом или удерживайте Shift. После падения — кнопка «Встать» или R. Для прямого удара отведите стик и вынесите вперёд; движение вверх выводит кулак к голове, вниз — к корпусу и ногам.",15,RiftUI.CYAN))
 	add_slider("input/tilt_sensitivity",tr("SENSITIVITY"),tr("SENSITIVITY_HINT"),0.25,3.0,0.05,func(v: float) -> String: return "%.2f×" % v)
 	add_slider("input/tilt_deadzone",tr("DEADZONE"),tr("DEADZONE_HINT"),0.02,0.4,0.01,percent)
 	var sensor_row := RiftUI.row(20)

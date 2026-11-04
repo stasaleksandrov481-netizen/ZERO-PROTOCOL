@@ -9,6 +9,7 @@ const LEG_UPPER := 2.1*P
 const LEG_LOWER := 2.1*P
 const REST_Y := -6.35*P
 const WALK_SPEED := 2.45*P
+const RUN_SPEED := 3.8*P
 const SHOULDER_MIN := -3.02
 const SHOULDER_MAX := 1.65
 signal overload(point: Vector2,strength: float)
@@ -16,11 +17,17 @@ signal impact(point: Vector2,strength: float,direction: Vector2,target: PhysicsB
 signal strike(point: Vector2,strength: float)
 signal footstep(strength: float)
 signal planted(point: Vector2,strength: float)
+signal balance_changed(state: String)
 @onready var core: Part = $Bodies/Core
 var parts: Dictionary = {}
 var initial_poses: Dictionary = {}
 var arm_load: Array[float] = [0.0,0.0]
 var fallen := false
+const Balance = preload("res://scripts/systems/balance_response.gd")
+var balance: Balance = Balance.new()
+var balance_state := "steady"
+var run_requested := false
+var run_blend := 0.0
 var walk_axis := 0.0
 var hand_input: Array[Vector2] = [Vector2.ZERO,Vector2.ZERO]
 var hand_world: Array[Vector2] = [Vector2.ZERO,Vector2.ZERO]
@@ -29,6 +36,9 @@ var hand_engaged: Array[bool] = [false,false]
 var arm_goals: Array[Vector2] = [Vector2.ZERO,Vector2.ZERO]
 var arm_speeds: Array[Vector2] = [Vector2.ZERO,Vector2.ZERO]
 var arm_commanded: Array[bool] = [false,false]
+var wrist_targets: Array[Vector2] = [Vector2(-16,198),Vector2(32,198)]
+var wrist_velocities: Array[Vector2] = [Vector2.ZERO,Vector2.ZERO]
+var elbow_compression: Array[float] = [0.0,0.0]
 var strike_cooldowns: Array[float] = [0.0,0.0]
 var hand_contacts: Array[bool] = [false,false]
 var last_impulses: Array[float] = [0.0,0.0]
@@ -86,20 +96,35 @@ func _physics_process(delta: float) -> void:
   reset_stance()
   return
  physics_clock += delta
+ var root_angle := wrapf(core.rotation,-PI,PI)
+ if stabilized and absf(root_angle) > .98 and not balance.is_prone(): balance.fall(signf(root_angle))
+ var upright := absf(root_angle) < .30 and core.position.y < REST_Y+70
+ balance.tick(delta,upright,_grounded())
+ fallen = balance.is_prone()
+ if balance.state != balance_state: balance_state = balance.state;balance_changed.emit(balance_state)
+ run_blend = move_toward(run_blend,1.0 if run_requested and absf(walk_axis) > .08 and balance.state == "steady" else 0.0,delta*.72)
  drive_axis = move_toward(drive_axis,walk_axis,delta*(1.15 if absf(walk_axis) > .08 else 1.8))
+ if fallen: drive_axis = move_toward(drive_axis,0,delta*3)
  walk_blend = move_toward(walk_blend,absf(drive_axis),delta*2.2)
- gait += delta*3.0*walk_blend
+ gait += delta*lerpf(3.0,2.85,run_blend)*walk_blend
  last_torque = 0
  _drive(parts["Head"],core,core.rotation,60,16,parts["Head"].mass*90*P*P)
  if stabilized:
-  _drive(core,null,drive_axis*.065,130,24,core.mass*145*P*P)
+  var down := balance.state in ["falling","down"]
+  var rise := balance.state == "rising"
+  var stability := .07 if down else (.35+.65*clampf(balance.age/2.0,0,1) if rise else 1.0)
+  _drive(core,null,drive_axis*(.065+run_blend*.07)+balance.lean,130*stability,24*sqrt(stability),core.mass*145*P*P*stability)
   var bob := absf(sin(gait))*.07*P*walk_blend
-  var error := REST_Y-bob-core.position.y
+  var rest_height := REST_Y+run_blend*.27*P
+  var error := rest_height-bob-core.position.y
+  if rise: error *= smoothstep(0,1,clampf(balance.age/1.5,0,1))
   var support := _support()
+  if rise: support = maxf(support,.85)
+  if down: support = 0
   var force := total_mass*(error*36-core.linear_velocity.y*8)-total_mass*G*.48
   core.apply_central_force(Vector2(0,clampf(force,-total_mass*G*2.1,total_mass*G)*support))
-  var traction := clampf((drive_axis*WALK_SPEED-core.linear_velocity.x)*3.7,-4.5*P,4.5*P)*total_mass
-  core.apply_central_force(Vector2(traction*support,0))
+  var traction := clampf((drive_axis*lerpf(WALK_SPEED,RUN_SPEED,run_blend)-core.linear_velocity.x)*3.7,-4.5*P,4.5*P)*total_mass
+  core.apply_central_force(Vector2(traction*support*(.16 if balance.state == "stagger" else (.25 if rise else 1.0)),0))
  for index in range(2):
   _leg(index)
   _arm(index,delta)
@@ -118,21 +143,39 @@ func _physics_process(delta: float) -> void:
 func _support() -> float:
  var a: Part = parts["LeftFoot"];var b: Part = parts["RightFoot"]
  return 1.0 if maxf(a.position.y,b.position.y) > -1.2*P else .1
+func _grounded() -> bool:
+ for body: Part in parts.values():
+  if body.support_contacts > 0: return true
+ return false
+func receive_impact(strength: float,direction: Vector2,point: Vector2 = Vector2.ZERO) -> void:
+ if not enabled: return
+ var push := signf(direction.x)
+ if push == 0: push = 1
+ var bracing := run_blend > .6 or ((hand_engaged[0] or hand_engaged[1]) and maxf(parts.LeftForearm.linear_velocity.length(),parts.RightForearm.linear_velocity.length()) > 150)
+ balance.hit(strength,push,run_blend,_grounded(),bracing)
+ if strength >= .20:
+  for body: Part in parts.values(): body.apply_central_impulse(Vector2(push*(22+strength*78),-strength*4)*body.mass)
+  core.apply_torque_impulse(core.inertia*push*strength*.65)
+func request_recovery() -> void: balance.request_recovery()
 
 func _leg(index: int) -> void:
  var prefix := "Left" if index == 0 else "Right"
  var up: Part = parts[prefix+"Thigh"]
  var low: Part = parts[prefix+"Shin"]
  var foot: Part = parts[prefix+"Foot"]
- if not stabilized or absf(wrapf(core.rotation,-PI,PI)) > .9:
+ if not stabilized or balance.state in ["falling","down"]:
   _drive(up,core,core.rotation-.15,18,8,up.mass*25*P*P)
   _drive(low,up,up.rotation+.45,18,8,low.mass*22*P*P)
   _drive(foot,low,low.rotation-.15,16,8,foot.mass*20*P*P)
   return
  var phase := gait+(PI if index == 0 else 0.0)
  var idle := .60 if index == 0 else -.60
- var x := lerpf(idle,sin(phase)*1.02*signf(drive_axis),walk_blend)
- var lift := maxf(0,cos(phase))*.82*walk_blend
+ var x := lerpf(idle,sin(phase)*lerpf(1.18,1.84,run_blend)*signf(drive_axis),walk_blend)
+ var lift := maxf(0,cos(phase))*lerpf(.82,1.03,run_blend)*walk_blend
+ if balance.catch_step > .01:
+  var catch_phase: float = balance.age*6.0+(PI if index == 0 else 0.0)
+  x += balance.direction*balance.catch_step*(.75 if index == 0 else 1.1)
+  lift = maxf(lift,maxf(0,sin(catch_phase))*.62*balance.catch_step)
  var hip := core.position+Vector2(.33 if index == 0 else -.33,1.7).rotated(core.rotation)*P
  var target := Vector2(core.position.x+x*P,(-.60-lift)*P)-hip
  var angles := solve_chain(target,LEG_UPPER,LEG_LOWER,-1)
@@ -146,7 +189,7 @@ func _arm(index: int,delta: float) -> void:
  var low: Part = parts[prefix+"Forearm"]
  var shoulder := core.position+Vector2(.58 if index == 0 else -.62,-.83).rotated(core.rotation)*P
  var control: Vector2 = hand_input[index]
- var commanded := world_aim[index] or hand_engaged[index] or control.length() > .08
+ var commanded := (world_aim[index] or hand_engaged[index] or control.length() > .08) and not fallen
  if arm_commanded[index] and not commanded:
   # Cancel the command's stored motion, then brake the physical arm into its rest pose.
   arm_goals[index] = Vector2(clampf(wrapf(up.rotation-core.rotation,-PI,PI),SHOULDER_MIN,SHOULDER_MAX),clampf(wrapf(low.rotation-up.rotation,-PI,PI),-2.65,-.04))
@@ -154,17 +197,22 @@ func _arm(index: int,delta: float) -> void:
  arm_commanded[index] = commanded
  var swing := sin(gait+(PI if index == 0 else 0.0))*1.45*walk_blend
  var target := Vector2((-.25 if index == 0 else .50)+swing,3.10-absf(swing)*.25)*P
- if world_aim[index]: target = hand_world[index]-shoulder
+ if fallen: target = Vector2(.65,2.8)*P
+ elif world_aim[index]: target = hand_world[index]-shoulder
  elif hand_engaged[index] or control.length() > .08:
-  # Position, not angle-only control: moving toward the center folds the elbow.
-  target = control*(ARM_UPPER+ARM_LOWER-4.0)
-  if target.length() < .15*P: target = Vector2(.30,-.35)*P
- var angles := solve_chain(target,ARM_UPPER,ARM_LOWER,1)
+  # A forward working envelope: retract, jab, sweep up or drive down with the elbow.
+  # Pulling back folds the arm in front of the body instead of winding the shoulder.
+  target = Vector2(lerpf(.25,3.12,(control.x+1)*.5),.42+control.y*2.72)*P
+ var desired_velocity := ((target-wrist_targets[index])*7.0).limit_length(340 if commanded else 210)
+ wrist_velocities[index] = wrist_velocities[index].move_toward(desired_velocity,(1000 if commanded else 620)*delta)
+ wrist_targets[index] += wrist_velocities[index]*delta
+ var angles := solve_chain(wrist_targets[index],ARM_UPPER,ARM_LOWER,1)
+ elbow_compression[index] = move_toward(elbow_compression[index],clampf(low.opponent_impulse/(35*P),0,.26),delta*3.0)
  # The target and the measured joint angle must share one bounded coordinate domain.
  # Unwrapping only the target used to wind it up by 2π and keep the motor spinning.
  var desired_shoulder := clampf(wrapf(angles.x-core.rotation,-PI,PI),SHOULDER_MIN+.04,SHOULDER_MAX-.04)
  var requested := Vector2(desired_shoulder,
-  clampf(wrapf(angles.y-angles.x,-PI,PI),-2.65,-.04))
+  clampf(wrapf(angles.y-angles.x,-PI,PI)-elbow_compression[index],-2.65,-.04))
  for axis in range(2):
   var error := requested[axis]-arm_goals[index][axis]
   var max_speed := (3.0 if axis == 0 else 4.0) if commanded else (1.8 if axis == 0 else 2.5)
@@ -215,7 +263,7 @@ func _contacts() -> void:
   var was := left_contact if prefix == "Left" else right_contact
   var index := 0 if prefix == "Left" else 1
   if touching and not was and physics_clock-step_times[index] > .40:
-   var strength := clampf(foot.contact_impulse/(30*P)+walk_blend*.32,.15,1)
+   var strength := clampf(foot.contact_impulse/(30*P)+walk_blend*.32+run_blend*.20,.15,1)
    step_times[index] = physics_clock;footstep.emit(strength);planted.emit(foot.global_position,strength)
   if prefix == "Left": left_contact = touching
   else: right_contact = touching
@@ -228,16 +276,18 @@ func _reset_commands() -> void:
   arm_goals[index] = Vector2(up_pose.get_rotation(),low_pose.get_rotation()-up_pose.get_rotation())
   arm_speeds[index] = Vector2.ZERO;strike_cooldowns[index] = .35;hand_contacts[index] = false;last_impulses[index] = 0
   arm_commanded[index] = false
+  wrist_targets[index] = Vector2(-.25 if index == 0 else .50,3.10)*P;wrist_velocities[index] = Vector2.ZERO;elbow_compression[index] = 0
 func reset_stance() -> void:
  for key: String in parts:
   parts[key].reset_pose = initial_poses[key]
   parts[key].reset_requested = true;parts[key].sleeping = false
  walk_axis = 0;hand_input.assign([Vector2.ZERO,Vector2.ZERO]);world_aim.assign([false,false]);hand_engaged.assign([false,false])
- gait = 0;walk_blend = 0;drive_axis = 0;load_ratio = 0;overload_time = 0;spark_cooldown = 1;step_times.assign([-10.0,-10.0])
+ gait = 0;walk_blend = 0;drive_axis = 0;run_requested = false;run_blend = 0;balance.clear();fallen = false;balance_state = "steady";load_ratio = 0;overload_time = 0;spark_cooldown = 1;step_times.assign([-10.0,-10.0])
  previous_x = 0;reset_cooldown = 3
  _reset_commands()
 func set_enabled(value: bool) -> void:
  enabled = value
  for body: Part in parts.values(): body.freeze = not value
  if not value:
+  run_requested = false
   walk_axis = 0;hand_input.assign([Vector2.ZERO,Vector2.ZERO]);world_aim.assign([false,false]);hand_engaged.assign([false,false])
