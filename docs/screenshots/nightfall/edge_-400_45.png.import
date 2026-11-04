@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bkcnvgxtrwnce"
-path="res://.godot/imported/atlant_menu.png-cdfd6b3c3b517ee356613357298be008.ctex"
+uid="uid://dwrrek6ijqqni"
+path="res://.godot/imported/edge_-400_45.png-824aa15b33d9ccb3036c82f74912bd8c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/background/atlant_menu.png"
-dest_files=["res://.godot/imported/atlant_menu.png-cdfd6b3c3b517ee356613357298be008.ctex"]
+source_file="res://docs/screenshots/nightfall/edge_-400_45.png"
+dest_files=["res://.godot/imported/edge_-400_45.png-824aa15b33d9ccb3036c82f74912bd8c.ctex"]
 
 [params]
 

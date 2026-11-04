@@ -57,7 +57,8 @@ func _ready() -> void:
  robot = builder.create(robot_spawn_x)
  if robot == null:
   if is_instance_valid(builder.get("robot")): builder.get("robot").free()
-  startup_error = "Сборка АТ-01 не создала модель."
+  startup_error = str(builder.get("startup_error"))
+  if startup_error.is_empty(): startup_error = "Сборка АТ-01 не создала модель."
   return
  $WorldView/World/Range.add_child(robot)
  if not bool(robot.get("initialized")):

@@ -16,6 +16,7 @@ func _ready() -> void:
  SettingsManager.save_failed.connect(_save_error)
  NavigationManager.bind(route_host, modal_host, toast_host)
  NavigationManager.route_changed.connect(_route_changed)
+ NavigationManager.route_loading.connect(_route_loading)
  _layout()
  _apply_contrast()
  NavigationManager.go(&"home")
@@ -50,6 +51,10 @@ func _apply_contrast() -> void:
   theme.set_color("font_color", type, Color.WHITE if enabled else RiftUI.TEXT)
  for type in ["Button", "OptionButton"]:
   theme.set_color("font_focus_color", type, Color.WHITE)
+
+func _route_loading(route: StringName) -> void:
+ if route != &"home":
+  $MenuBackground.hide();$MenuShade.hide();$MenuBackground.set_home_active(false)
 
 func _route_changed(route: StringName) -> void:
  $SectionShade.visible = false

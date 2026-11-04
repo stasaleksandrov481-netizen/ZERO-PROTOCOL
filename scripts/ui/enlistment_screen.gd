@@ -1,6 +1,7 @@
 extends Control
 ## The campaign is committed only after a real freehand signature and the briefing.
 const UI = preload("res://scripts/ui/rift_ui.gd")
+const Textures = preload("res://scripts/systems/texture_source.gd")
 var submitting := false
 var step := 0
 var first_name := ""
@@ -110,7 +111,8 @@ func _rebuild() -> void:
  elif step == 1: _contract()
  else: _briefing()
 func _speaker_portrait(index: int) -> TextureRect:
- if portrait_atlas == null: portrait_atlas = load("res://assets/ui/radio_personnel.png")
+ if portrait_atlas == null: portrait_atlas = Textures.png("res://assets/ui/radio_personnel.png")
+ if portrait_atlas == null: return TextureRect.new()
  var region := AtlasTexture.new();region.atlas = portrait_atlas;var cell := Vector2(portrait_atlas.get_size())*.5
  region.region = Rect2(Vector2(index%2,index/2)*cell+Vector2(cell.x*.15,0),Vector2(cell.x*.7,cell.y))
  var portrait := TextureRect.new();portrait.texture = region;portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE;portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED;portrait.custom_minimum_size = Vector2(92,108);return portrait

@@ -1,5 +1,8 @@
 extends Node2D
 ## Infinite mirrored panoramic layers, bounded rain and water particles.
+const Textures = preload("res://scripts/systems/texture_source.gd")
+var initialized := false
+var startup_error := ""
 var camera: Camera2D
 var biome := "sea"
 var route_end := 5200.0
@@ -22,12 +25,15 @@ class FrontEffects extends Node2D:
  func _draw() -> void: environment.draw_effects(self)
 func _ready() -> void:
  z_index = -15
- atlas = load("res://assets/environments/night_"+biome+".png")
- transport = load("res://assets/environments/heavy_transport.png")
+ atlas = Textures.png("res://assets/environments/night_"+biome+".png")
+ transport = Textures.png("res://assets/environments/heavy_transport.png")
+ if atlas == null or transport == null:
+  startup_error = "Не загружены изображения окружения или транспорта.";set_process(false);return
  if biome == "sea":
   water = Polygon2D.new();water.name = "WaterSurface";water.z_index = 25;water.z_as_relative = false;add_child(water)
   water_material = ShaderMaterial.new();water_material.shader = load("res://resources/theme/coastal_water.gdshader");water.material = water_material
  foreground = FrontEffects.new();foreground.environment = self;foreground.z_index = 30;foreground.z_as_relative = false;add_child(foreground)
+ initialized = true
 func _process(delta: float) -> void:
  clock += delta
  if is_instance_valid(camera):

@@ -71,7 +71,7 @@ func _run() -> void:
  await get_tree().create_timer(5.5).timeout
  check(not game.landing and game.robot.enabled,"landing returns controls")
  check(game.environment.water != null and game.environment.water.material != null,"live refracting water layer")
- check(game.camera.zoom.x < .64,"default camera remains pulled back")
+ check(game.target_zoom <= game.CAMERA_ZOOM and game.camera.zoom.x/(float(game.arena_view.size.y)/720.0) < .64,"default camera remains pulled back")
  var start_x: float = game.robot.core.position.x
  Input.action_press("future_move_right");await physics_frames(250);Input.action_release("future_move_right");await physics_frames(12)
  check(game.robot.core.position.x > start_x+80,"native walking advances along sea bed")

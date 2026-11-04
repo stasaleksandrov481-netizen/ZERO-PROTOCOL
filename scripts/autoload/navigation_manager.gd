@@ -2,6 +2,8 @@ extends Node
 ## One active screen, one modal at a time. Persistent background lives outside the route host.
 
 signal route_changed(route: StringName)
+signal route_loading(route: StringName)
+const Textures = preload("res://scripts/systems/texture_source.gd")
 signal quit_requested
 
 const ROUTES := {
@@ -53,6 +55,15 @@ func go(route: StringName) -> void:
 	if not ROUTES.has(String(route)) or not is_instance_valid(host): return
 	if is_instance_valid(active_modal): return
 	transitioning = true
+	route_loading.emit(route)
+	if route in [&"test",&"expedition",&"hangar"]:
+		var required: Array[String] = ["res://assets/atlants/at01_oplot_atlas.png"]
+		if route == &"expedition":
+			required.append_array(["res://assets/creatures/klyk_atlas.png","res://assets/environments/night_"+str(Expedition.active_route().get("biome","sea"))+".png","res://assets/environments/heavy_transport.png"])
+		var problem := Textures.require_png(required)
+		if not problem.is_empty():
+			await _range_failed({"stage":"Проверка изображений","reason":problem},[])
+			return
 	if is_instance_valid(current_screen):
 		current_screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		current_screen.process_mode = Node.PROCESS_MODE_DISABLED
@@ -74,6 +85,10 @@ func go(route: StringName) -> void:
 		show_info("Ошибка загрузки", "Не удалось открыть раздел. Вернитесь в главное меню.")
 		return
 	current_screen = scene.instantiate()
+	# Never expose a half-built world, including top-level SubViewportContainers.
+	current_screen.hide();current_screen.modulate.a = 0
+	var world_view := current_screen.get_node_or_null("WorldView") as Control
+	if world_view != null: world_view.hide()
 	current_route = route
 	host.add_child(current_screen)
 	current_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -88,9 +103,13 @@ func go(route: StringName) -> void:
 				details = current_screen.call("range_startup_details")
 			await _range_failed(details,range_errors.snapshot())
 			return
+	current_screen.set_meta("startup_validated",true)
+	current_screen.show()
+	if world_view != null: world_view.show()
 	if not bool(SettingsManager.get_value("video/reduced_motion")):
 		current_screen.modulate.a = 0.0
 		await create_tween().tween_property(current_screen, "modulate:a", 1.0, 0.14).finished
+	current_screen.modulate.a = 1
 	transitioning = false
 	route_changed.emit(route)
 	if current_screen.has_method("focus_initial"): call_deferred("_focus_screen",current_screen)
@@ -101,7 +120,7 @@ func _focus_screen(screen: Control) -> void:
 		screen.call("focus_initial")
 
 func _range_failed(details: Dictionary, errors: Array[Dictionary]) -> void:
-	var report := {"patch":"RIFT-0.10.0","engine":Engine.get_version_info()["string"],
+	var report := {"patch":"RIFT-0.10.1","engine":Engine.get_version_info()["string"],
 		"platform":OS.get_name(),"startup":details,"errors":errors}
 	var log_file := FileAccess.open("user://at01_startup_report.json",FileAccess.WRITE)
 	if log_file != null:
@@ -119,7 +138,7 @@ func _range_failed(details: Dictionary, errors: Array[Dictionary]) -> void:
 	if not selected.is_empty():
 		message += "\n\n%s:%d\n%s" % [str(selected["file"]).trim_prefix("res://"),
 			int(selected["line"]),str(selected["message"]).left(360)]
-	message += "\n\nПатч RIFT-0.10.0 · Godot %s" % Engine.get_version_info()["string"]
+	message += "\n\nПатч RIFT-0.10.1 · Godot %s" % Engine.get_version_info()["string"]
 	transitioning = false
 	current_route = &""
 	await go(&"home")

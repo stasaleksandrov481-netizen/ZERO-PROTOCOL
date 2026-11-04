@@ -30,12 +30,16 @@ func _ready() -> void:
  var world := $WorldView/World/Range
  world.get_node("Backdrop").hide();world.get_node("Floor/GraySlab").hide();world.get_node("Floor/TopEdge").hide()
  environment = load("res://scripts/gameplay/coastal_environment.gd").new();environment.camera = camera;environment.biome = str(route.get("biome","sea"));environment.route_end = route_end;world.add_child(environment)
+ if not environment.initialized:
+  startup_stage = "Загрузка окружения";startup_error = environment.startup_error;return
  companion = Builder.new().create(robot_spawn_x-390);companion.name = "Kedr";world.add_child(companion);companion.modulate = Color(.74,.86,.96);companion.set_meta("callsign","КЕДР / АТ-02")
  companion.footstep.connect(func(strength: float) -> void:
   if not landing: environment.splash(companion.core.position.x,strength*.65))
  companion.impact.connect(func(_point: Vector2,strength: float,_direction: Vector2,target_body: PhysicsBody2D) -> void:
   if target_body == enemy and is_instance_valid(enemy): enemy.register_hit(strength,true))
  enemy = load("res://scripts/gameplay/klyk_2d.gd").new();enemy.name = "Klyk";enemy.position = Vector2(3470,-255);enemy.target = robot;world.add_child(enemy)
+ if not enemy.initialized:
+  startup_stage = "Загрузка Клыка";startup_error = enemy.startup_error;return
  enemy.set_enabled(stage == "fight");enemy.landed.connect(_enemy_landed);enemy.defeated.connect(_enemy_defeated)
  if stage in ["arrival","mayak","base"]: enemy.state = "dead";enemy.hide();enemy.collision_layer = 0
  _boundaries(world)

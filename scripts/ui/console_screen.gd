@@ -1,5 +1,6 @@
 extends Control
 const UI = preload("res://scripts/ui/rift_ui.gd")
+const Textures = preload("res://scripts/systems/texture_source.gd")
 @export var kind := "operations"
 var content: HBoxContainer
 var viewport: SubViewport
@@ -28,11 +29,7 @@ func _ready() -> void:
   "hangar": _hangar()
   "archive": _archive()
   _: _operations()
-func _picture(path: String) -> Texture2D:
- if FileAccess.file_exists(path):
-  var image := Image.new()
-  if image.load_png_from_buffer(FileAccess.get_file_as_bytes(path)) == OK: image.generate_mipmaps();return ImageTexture.create_from_image(image)
- return load(path) if ResourceLoader.exists(path) else null
+func _picture(path: String) -> Texture2D: return Textures.png(path)
 func _scroll_column(parent: Node) -> VBoxContainer:
  var scroll := ScrollContainer.new();scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED;scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL;scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL;parent.add_child(scroll)
  var box := UI.column(14);scroll.add_child(box);return box

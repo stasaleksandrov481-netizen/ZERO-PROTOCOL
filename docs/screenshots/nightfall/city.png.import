@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cb5jriqe5fh8b"
-path="res://.godot/imported/at01_painted_steel.png-1ac69b6366bd259958533c09f7e620dd.ctex"
+uid="uid://cltthkofxcb20"
+path="res://.godot/imported/city.png-d4cae6ddcd444ecdfa834d252a98ab0c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/materials/at01_painted_steel.png"
-dest_files=["res://.godot/imported/at01_painted_steel.png-1ac69b6366bd259958533c09f7e620dd.ctex"]
+source_file="res://docs/screenshots/nightfall/city.png"
+dest_files=["res://.godot/imported/city.png-d4cae6ddcd444ecdfa834d252a98ab0c.ctex"]
 
 [params]
 

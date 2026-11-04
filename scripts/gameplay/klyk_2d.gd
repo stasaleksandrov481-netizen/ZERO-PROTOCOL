@@ -1,5 +1,10 @@
 extends RigidBody2D
 ## Support damage cannot deliver the player's final blow.
+const Textures = preload("res://scripts/systems/texture_source.gd")
+const ATLAS_PATH := "res://assets/creatures/klyk_atlas.png"
+@export_file("*.png") var atlas_path := ATLAS_PATH
+var initialized := false
+var startup_error := ""
 signal defeated
 signal landed(strength: float)
 var target: Node2D
@@ -12,7 +17,9 @@ var atlas: Texture2D
 var limbs: Array[Node2D] = []
 func _ready() -> void:
  mass = 75;collision_layer = 4;collision_mask = 3;lock_rotation = true;contact_monitor = true;max_contacts_reported = 8;continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
- atlas = load("res://assets/creatures/klyk_atlas.png")
+ atlas = Textures.png(atlas_path)
+ if atlas == null:
+  startup_error = Textures.last_error;enabled = false;freeze = true;set_physics_process(false);return
  var shape := CollisionShape2D.new();var box := RectangleShape2D.new();box.size = Vector2(155,510);shape.shape = box;add_child(shape)
  _part(0,Vector2(0,-45),Vector2(.69,.74),0)
  _part(1,Vector2(-115,-170),Vector2(.69,.69),2)
@@ -25,7 +32,9 @@ func _ready() -> void:
   _part(6,Vector2(-41,204),Vector2(.47,.40),0,leg).modulate = tint
   var arm := Node2D.new();arm.position = Vector2(-15+offset,-95);arm.z_index = -2 if side == 0 else 3;add_child(arm);limbs.append(arm)
   _part(3,Vector2(-40,95),Vector2(.44,.55),0,arm).modulate = tint
+ initialized = true
 func _part(index: int,p: Vector2,scale_value: Vector2,layer: int,parent: Node = self) -> Sprite2D:
+ if atlas == null: return null
  var sprite := Sprite2D.new();var region := AtlasTexture.new();region.atlas = atlas
  var cell := Vector2(atlas.get_width()/4.0,atlas.get_height()/2.0);region.region = Rect2(Vector2(index%4,index/4)*cell,cell)
  sprite.texture = region;sprite.position = p;sprite.scale = scale_value;sprite.z_index = layer;parent.add_child(sprite);return sprite

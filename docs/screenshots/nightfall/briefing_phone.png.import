@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cx7mq1icq7upb"
-path="res://.godot/imported/at01_horizon_cutout_atlas.png-1c387c39488641d617410256c85ca6fd.ctex"
+uid="uid://dq2ug8un3yvh6"
+path="res://.godot/imported/briefing_phone.png-b9eb667a1b2dc344f42911d55cabc0c5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/atlants/at01_horizon_cutout_atlas.png"
-dest_files=["res://.godot/imported/at01_horizon_cutout_atlas.png-1c387c39488641d617410256c85ca6fd.ctex"]
+source_file="res://docs/screenshots/nightfall/briefing_phone.png"
+dest_files=["res://.godot/imported/briefing_phone.png-b9eb667a1b2dc344f42911d55cabc0c5.ctex"]
 
 [params]
 

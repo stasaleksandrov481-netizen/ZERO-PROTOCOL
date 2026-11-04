@@ -3,14 +3,17 @@ const Controller = preload("res://scripts/gameplay/atlant_2d_controller.gd")
 const Part = preload("res://scripts/gameplay/atlant_2d_part.gd")
 const SpriteArt = preload("res://scripts/models/atlant_2d_skin.gd")
 const P := 64.0
+var startup_error := ""
 var robot: Node2D
 var bodies: Node2D
 var joints: Node2D
 var body_map: Dictionary = {}
 var contact_material: PhysicsMaterial
 func create(spawn_x: float = 0.0) -> Node2D:
+ if not SpriteArt.prepare(): startup_error = SpriteArt.last_error;return null
  robot = Node2D.new()
  robot.name = "AT01"
+ robot.set_meta("skin",SpriteArt.SKIN_ID)
  robot.set_meta("view_profile","strict_right_side_2d")
  robot.set_script(Controller)
  bodies = Node2D.new();bodies.name = "Bodies";_child(robot,bodies)
