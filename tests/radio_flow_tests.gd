@@ -1,0 +1,57 @@
+extends Node
+const Dispatch = preload("res://scripts/systems/radio_dispatch.gd")
+var passed := 0
+var failed := 0
+func _ready() -> void: call_deferred("_run")
+func check(ok: bool,label: String) -> void:
+ if ok: passed += 1;print("PASS ",label)
+ else: failed += 1;print("FAIL ",label)
+func wait_time(value: float) -> void: await get_tree().create_timer(value).timeout
+func _run() -> void:
+ var errors = NavigationManager.RangeErrors.new();OS.add_logger(errors)
+ var d := Dispatch.new();d.page_fits = func(text: String) -> bool: return text.length() <= 48
+ var complete := "Приводы проверены. Держи береговые огни справа. Впереди док. Кедр прикроет подход. Ночью противник активнее."
+ d.enqueue("ЭХО",complete,0,"ordinary");d.advance();var interrupted: String = d.current.body;var page_index: int = d.page
+ d.enqueue("КЕДР","Контакт у подхода!",3,"urgent")
+ check(d.current.id == "ordinary","urgent arrival does not instantly replace the page being read")
+ d.tick(2.79);check(d.current.id == "ordinary","the current page gets a stable minimum reading interval")
+ d.tick(.02);check(d.current.id == "urgent" and d.pending.size() == 1,"urgent contact is delivered after that reading interval")
+ d.advance();check(d.current.is_empty() and d.quiet_gap > 0,"different calls are separated by a quiet interval")
+ d.paused = true;d.tick(20);check(d.current.is_empty() and d.quiet_gap > 0,"pause freezes the quiet interval")
+ d.paused = false;d.tick(.70)
+ check(d.current.id == "ordinary" and d.page == page_index and d.current.body == interrupted,"interrupted transmission resumes the exact page without starting over")
+ check(d.current.full_body == complete,"paging and interruption preserve the complete original transmission")
+ d.clear()
+ for i in range(30): d.enqueue("ЭХО","Сообщение "+str(i),0,"load_"+str(i))
+ check(d.pending.size() <= d.LIMIT,"queued transmissions have a fixed budget")
+ var radio = preload("res://scripts/ui/radio_widget.gd").new();radio.size = Vector2(420,194);add_child(radio)
+ var view_dispatch := Dispatch.new();radio.bind(view_dispatch);SettingsManager.set_value(&"video/reduced_motion",false)
+ view_dispatch.enqueue("КЕДР","Держу левый фланг. Продолжай идти к огням дока.",0,"view_first")
+ check(radio.face_fade == 0,"a new radio card starts transparent")
+ await wait_time(.12)
+ check(radio.face_fade > .1 and radio.face_fade < .95,"the whole card fades in instead of appearing in one frame")
+ await wait_time(.35);var position_before: Vector2 = radio.body.global_position
+ check(radio.face_fade == 1 and radio.body.text == view_dispatch.current.body,"a settled transmission is fully readable")
+ radio.set_combat_mode(true);await wait_time(.35)
+ check(radio.face_fade == 0 and radio.idle_button.visible and not radio.wants_expanded(),"combat uses the stable compact channel instead of a large automatic popup")
+ check(radio.compact_body.text.contains("Держу") and radio.compact_body.get_minimum_size().y <= 36,"compact combat preview remains readable in two measured lines")
+ radio.idle_button.pressed.emit();await wait_time(.35)
+ check(radio.wants_expanded() and radio.face_fade == 1,"player can explicitly open the full card during combat")
+ radio._collapse();await wait_time(.35)
+ var last_preview: String = radio.compact_body.text;view_dispatch.advance()
+ check(radio.ending and radio.compact_body.text == last_preview,"ending a call retains its text until the compact channel has faded")
+ await wait_time(.30)
+ check(not radio.ending and radio.compact_body.text == "Канал свободен","the quiet channel replaces the completed call through the same smooth transition")
+ view_dispatch.enqueue("ЭХО","Точка назначения подтверждена. Держитесь огней справа.",3,"view_next");view_dispatch.tick(.70);await wait_time(.55)
+ check(radio.collapsed and radio.face_fade == 0,"a new incoming call does not undo the player's collapse choice")
+ radio.idle_button.pressed.emit();await wait_time(.35)
+ check(radio.body.global_position.is_equal_approx(position_before),"expanded text returns to the same fixed reading position")
+ view_dispatch.enqueue("ТАЯ","Приводы в норме.",3,"later");view_dispatch.tick(12);view_dispatch.tick(.70);await wait_time(.03)
+ var frozen_fade: float = radio.content_fade;view_dispatch.paused = true;await wait_time(.2)
+ check(is_equal_approx(radio.content_fade,frozen_fade),"pause freezes an in-progress content transition")
+ view_dispatch.paused = false;SettingsManager.set_value(&"video/reduced_motion",true);await wait_time(.1)
+ check(radio.content_fade == 1 and radio.face.position.y == 0,"reduced motion removes radio movement and transitional fades")
+ SettingsManager.set_value(&"video/reduced_motion",false);radio.queue_free();AudioManager.shutdown();await wait_time(.05)
+ check(errors.snapshot().is_empty(),"zero unexpected script or engine errors")
+ for item: Dictionary in errors.snapshot(): print("UNEXPECTED ",item)
+ OS.remove_logger(errors);print("RADIO FLOW RESULT ",passed," passed / ",failed," failed");get_tree().quit(1 if failed else 0)

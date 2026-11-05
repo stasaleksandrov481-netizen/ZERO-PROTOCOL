@@ -1,3 +1,25 @@
+# Текущие проверки 0.14.0
+
+После импорта Godot 4.7.2 запускайте каждый набор с отдельным `XDG_DATA_HOME`: тесты изменяют сохранения и настройки.
+
+```bash
+godot --headless --path . --scene res://tests/asset_startup_tests.tscn
+godot --headless --path . --scene res://tests/prologue_tests.tscn
+godot --headless --path . --scene res://tests/physics_regression_tests.tscn
+godot --headless --path . --scene res://tests/dynamic_combat_tests.tscn
+godot --headless --path . --scene res://tests/combat_readability_tests.tscn
+godot --headless --path . --scene res://tests/inertial_rig_tests.tscn
+godot --headless --path . --scene res://tests/radio_flow_tests.tscn
+godot --headless --path . --scene res://tests/actuator_pacing_tests.tscn
+godot --headless --path . --scene res://tests/nightfall_tests.tscn
+```
+
+Новые наборы проверяют настоящий десятичастный рэгдолл, столкновение с челюстью и инерцию головы, суставы, шаг, падение/подъём, передний план игрока, темп физического кулака и спокойную рацию. `nightfall_tests` проходит весь бой реальными движениями стиков, затем стыковку, маршрут и сохранение. Подробные результаты — [UPDATE_0_14_0.md](../docs/UPDATE_0_14_0.md).
+
+`capture_inertial.tscn` и `capture_readability.tscn` требуют графического запуска и сохраняют PNG/JSON в `RIFT_CAPTURE_DIR`. Первая сцена использует явно отмеченные в JSON установочные импульсы и отключение мышц, вторая фиксирует настоящие контакты от стиков. Кадры 1024×459 — проверка компоновки в Linux, не аппаратный тест Android.
+
+---
+
 # Проверки 0.12.0
 
 К трём наборам 0.11 добавлена `physics_regression_tests.tscn`: 35 проверок приводов, полного цикла круговых движений и отпускания обоих стиков, конечных углов, падения с отключённым приводом, разгона и торможения, быстрого физического удара в челюсть, всех 10 форм Клыка, плоской воды и плеска, паузы, уменьшенного движения и размещения рации на двух экранах.

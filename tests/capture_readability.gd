@@ -31,7 +31,7 @@ func _run() -> void:
  game.enemy.rng.seed = 9;game.enemy.balance.rng.seed = 12;game.robot.balance.rng.seed = 7
  game.set_camera_zoom(1.12);game.stage = "fight";game.enemy.set_enabled(true)
  game.robot.impact.connect(func(_p: Vector2,strength: float,_d: Vector2,body: PhysicsBody2D) -> void:
-  if body == game.enemy: contacts += 1;strongest = maxf(strongest,strength))
+  if game.enemy.owns_collider(body): contacts += 1;strongest = maxf(strongest,strength))
  var captured := false
  for i in range(1600):
   var distance: float = game.enemy.position.x-game.robot.core.position.x

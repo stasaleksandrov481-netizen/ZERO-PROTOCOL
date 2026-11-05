@@ -58,7 +58,7 @@ func _body(key: String, point: Vector2, size_value: Vector2, mass_value: float, 
  body.continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
  body.contact_monitor = true;body.max_contacts_reported = 8
  body.collision_layer = 2;body.collision_mask = 5;body.physics_material_override = contact_material
- body.set("max_spin",4.2 if kind in ["upper_arm","forearm"] else 11.0)
+ body.set("max_spin",5.0 if kind in ["upper_arm","forearm"] else 11.0)
  _child(bodies,body)
  var proxy := CollisionShape2D.new();proxy.name = "Collision"
  if kind in ["upper_arm","forearm"]:

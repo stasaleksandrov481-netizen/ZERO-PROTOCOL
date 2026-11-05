@@ -19,7 +19,7 @@ func frames(n: int = 6) -> void:
 func occupied(body: PhysicsBody2D,point: Vector2) -> bool:
  var query := PhysicsPointQueryParameters2D.new();query.position = point;query.collision_mask = 4
  for hit: Dictionary in body.get_world_2d().direct_space_state.intersect_point(query):
-  if hit.collider == body: return true
+  if body.owns_collider(hit.collider): return true
  return false
 func _run() -> void:
  var errors := Errors.new();OS.add_logger(errors)
@@ -86,7 +86,7 @@ func _run() -> void:
  check(not occupied(enemy,enemy.global_position+Vector2(-350,-330)),"empty space outside the silhouette is not a giant blocking rectangle")
  var probe := RigidBody2D.new();probe.mass = 7.5;probe.gravity_scale = 0;probe.collision_layer = 2;probe.collision_mask = 4;probe.continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE;probe.contact_monitor = true;probe.max_contacts_reported = 8
  var cs := CollisionShape2D.new();var circle := CircleShape2D.new();circle.radius = 20;cs.shape = circle;probe.add_child(cs);probe.position = enemy.position+Vector2(-520,-105)
- probe.body_entered.connect(func(body: Node) -> void: if body == enemy: probe_contact = true)
+ probe.body_entered.connect(func(body: Node) -> void: if enemy.owns_collider(body): probe_contact = true)
  game.get_node("WorldView/World/Range").add_child(probe);probe.linear_velocity = Vector2(1200,0);await ticks(150)
  check(probe_contact,"fast physical fist contacts the enemy jaw")
  check(probe.position.x < enemy.position.x-200,"CCD fist cannot tunnel through the jaw")

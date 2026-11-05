@@ -23,7 +23,7 @@ func _run() -> void:
  var game = NavigationManager.current_screen;var hud = game.get_node("HUD");var feedback = game.hit_feedback
  hud.dispatcher.clear();if is_instance_valid(game.field_guide): game.field_guide.dismiss()
  place(game.robot,game.enemy.position.x-580);place(game.companion,game.enemy.position.x-940)
- game.chatter.contact = true;game.stage = "fight";game.enemy.enabled = true;game.enemy.freeze = true;game.enemy.set_physics_process(false)
+ game.chatter.contact = true;game.stage = "fight";game.enemy.set_enabled(false);game.enemy.enabled = true;game.enemy.set_physics_process(false)
  game.set_camera_zoom(1.12);await ticks(420)
  var factor := clampf(float(game.arena_view.size.y)/720,.5,2)
  print("FRAMING zoom=",game.camera.zoom.x/factor," manual=",game.target_zoom," subjects=",game._camera_subjects()," viewport=",game.arena_view.size," factor=",factor)

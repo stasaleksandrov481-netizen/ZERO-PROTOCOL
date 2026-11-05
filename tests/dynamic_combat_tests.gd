@@ -82,11 +82,11 @@ func _run() -> void:
  check(enemy.position.x < enemy_start-350,"enemy actively pursues the player")
  check(enemy.state_visits.has("rush") and enemy.state_visits.has("charge_windup"),"enemy announces a charge and runs into it")
  var hand: RigidBody2D = game.robot.parts.RightForearm
- enemy.set_enabled(false);enemy.position = Vector2(hand.global_position.x+300,-330);await ticks(4);enemy.set_enabled(true);enemy.evade_cooldown = 0;enemy.behavior = "guard";enemy.threat_age = 0
+ enemy.set_enabled(false);enemy.reset_stance(Vector2(hand.global_position.x+300,-330));await ticks(4);enemy.set_enabled(true);enemy.evade_cooldown = 0;enemy.behavior = "guard";enemy.threat_age = 0
  hand.linear_velocity = Vector2(190,0)
  enemy._choose_action(-450);enemy._choose_action(-450)
  check(enemy.behavior == "evade" and enemy.evade_cooldown > 3,"enemy reacts to a physically incoming hand with a limited evade")
- enemy.set_enabled(false);enemy.position = Vector2(1700,-330);enemy.balance.clear();await ticks(3);enemy.set_enabled(true);enemy.balance.rng.seed = 12
+ enemy.set_enabled(false);enemy.reset_stance(Vector2(1700,-330));await ticks(3);enemy.set_enabled(true);enemy.balance.rng.seed = 12
  enemy.register_hit(1,false,Vector2.RIGHT);await ticks(10);enemy.register_hit(1,false,Vector2.RIGHT)
  max_angle = 0;saw_down = false;saw_rising = false
  for i in range(1000):
@@ -95,12 +95,14 @@ func _run() -> void:
   if i%180 == 179: print("FALL_ENEMY ",enemy.balance.state," angle=",enemy.rotation," y=",enemy.position.y)
  check(max_angle > .8 and saw_down,"enemy can topple under accumulated heavy blows")
  check(saw_rising and enemy.balance.state == "steady","enemy physically recovers from the fall")
- enemy.set_enabled(false);game.robot.reset_stance();game._release_input();enemy.position = Vector2(500,-330);enemy.rotation = 0;enemy.linear_velocity = Vector2.ZERO;enemy.angular_velocity = 0;enemy.balance.clear();await ticks(180)
+ enemy.set_enabled(false);game.robot.reset_stance();game._release_input();enemy.reset_stance(Vector2(500,-330));await ticks(180)
  enemy.attack_clock = 0;enemy.attack_time = -1;enemy._set_behavior("guard");enemy.set_enabled(true)
  var received: Array[float] = []
  enemy.landed.connect(func(strength: float) -> void:
   received.append(strength);game.robot.receive_impact(strength,enemy.last_hit_direction,enemy.last_hit_point))
- await ticks(1100)
+ for i in range(1100):
+  await ticks(1)
+  if i%120 == 119: print("DEFENDER_TRACE ",i," dx=",enemy.position.x-game.robot.core.position.x," pose=",game.robot.fallen," AI=",enemy.behavior," balance=",enemy.balance.state," attack=",enemy.attack_time," speed=",enemy.linear_velocity.x)
  print("IDLE_DEFENDER_CONTACTS ",received.size()," distance=",enemy.position.x-game.robot.core.position.x," AI=",enemy.behavior)
  check(not received.is_empty(),"enemy can land a real contact attack on an idle player")
  for viewport: Vector2i in [Vector2i(1280,720),Vector2i(1024,459)]:

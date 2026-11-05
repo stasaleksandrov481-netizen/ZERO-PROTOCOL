@@ -8,8 +8,8 @@ const ARM_LOWER := 1.72*P
 const LEG_UPPER := 2.1*P
 const LEG_LOWER := 2.1*P
 const REST_Y := -6.35*P
-const WALK_SPEED := 2.45*P
-const RUN_SPEED := 3.8*P
+const WALK_SPEED := 2.85*P
+const RUN_SPEED := 4.65*P
 const SHOULDER_MIN := -3.02
 const SHOULDER_MAX := 1.65
 signal overload(point: Vector2,strength: float)
@@ -107,7 +107,7 @@ func _physics_process(delta: float) -> void:
  drive_axis = move_toward(drive_axis,walk_axis,delta*(1.15 if absf(walk_axis) > .08 else 1.8))
  if fallen: drive_axis = move_toward(drive_axis,0,delta*3)
  walk_blend = move_toward(walk_blend,absf(drive_axis),delta*2.2)
- gait += delta*lerpf(3.0,2.85,run_blend)*walk_blend
+ gait += delta*lerpf(2.80,2.60,run_blend)*walk_blend
  last_torque = 0
  _drive(parts["Head"],core,core.rotation,60,16,parts["Head"].mass*90*P*P)
  if stabilized:
@@ -116,7 +116,7 @@ func _physics_process(delta: float) -> void:
   var stability := .07 if down else (.35+.65*clampf(balance.age/2.0,0,1) if rise else 1.0)
   _drive(core,null,drive_axis*(.065+run_blend*.07)+balance.lean,130*stability,24*sqrt(stability),core.mass*145*P*P*stability)
   var bob := absf(sin(gait))*.07*P*walk_blend
-  var rest_height := REST_Y+run_blend*.27*P
+  var rest_height := REST_Y+(run_blend*.62+walk_blend*.16)*P
   var error := rest_height-bob-core.position.y
   if rise: error *= smoothstep(0,1,clampf(balance.age/1.5,0,1))
   var support := _support()
@@ -171,8 +171,8 @@ func _leg(index: int) -> void:
   return
  var phase := gait+(PI if index == 0 else 0.0)
  var idle := .60 if index == 0 else -.60
- var x := lerpf(idle,sin(phase)*lerpf(1.18,1.84,run_blend)*signf(drive_axis),walk_blend)
- var lift := maxf(0,cos(phase))*lerpf(.82,1.03,run_blend)*walk_blend
+ var x := lerpf(idle,sin(phase)*lerpf(1.65,2.50,run_blend)*signf(drive_axis),walk_blend)
+ var lift := maxf(0,cos(phase))*lerpf(.88,1.12,run_blend)*walk_blend
  if balance.catch_step > .01:
   var catch_phase: float = balance.age*6.0+(PI if index == 0 else 0.0)
   x += balance.direction*balance.catch_step*(.75 if index == 0 else 1.1)
@@ -204,8 +204,8 @@ func _arm(index: int,delta: float) -> void:
   # A forward working envelope: retract, jab, sweep up or drive down with the elbow.
   # Pulling back folds the arm in front of the body instead of winding the shoulder.
   target = Vector2(lerpf(.25,3.12,(control.x+1)*.5),.42+control.y*2.72)*P
- var desired_velocity := ((target-wrist_targets[index])*7.0).limit_length(340 if commanded else 210)
- wrist_velocities[index] = wrist_velocities[index].move_toward(desired_velocity,(1000 if commanded else 620)*delta)
+ var desired_velocity := ((target-wrist_targets[index])*10.0).limit_length(480 if commanded else 210)
+ wrist_velocities[index] = wrist_velocities[index].move_toward(desired_velocity,(1650 if commanded else 620)*delta)
  wrist_targets[index] += wrist_velocities[index]*delta
  var angles := solve_chain(wrist_targets[index],ARM_UPPER,ARM_LOWER,1)
  elbow_compression[index] = move_toward(elbow_compression[index],clampf(low.opponent_impulse/(35*P),0,.26),delta*3.0)
@@ -216,9 +216,9 @@ func _arm(index: int,delta: float) -> void:
   clampf(wrapf(angles.y-angles.x,-PI,PI)-elbow_compression[index],-2.65,-.04))
  for axis in range(2):
   var error := requested[axis]-arm_goals[index][axis]
-  var max_speed := (3.0 if axis == 0 else 4.0) if commanded else (1.8 if axis == 0 else 2.5)
+  var max_speed := (4.3 if axis == 0 else 5.6) if commanded else (1.8 if axis == 0 else 2.5)
   var desired := clampf(error*6.0,-max_speed,max_speed)
-  arm_speeds[index][axis] = move_toward(arm_speeds[index][axis],desired,(6.0 if axis == 0 else 9.0)*delta)
+  arm_speeds[index][axis] = move_toward(arm_speeds[index][axis],desired,((11.0 if axis == 0 else 15.0) if commanded else (6.0 if axis == 0 else 9.0))*delta)
   var step := arm_speeds[index][axis]*delta
   if signf(step) == signf(error) and absf(step) > absf(error): step = error;arm_speeds[index][axis] = 0
   arm_goals[index][axis] += step
@@ -229,8 +229,8 @@ func _arm(index: int,delta: float) -> void:
  var gravity_elbow := -G*low.mass*(low.position.x-elbow.x)
  var inertia_shoulder := up.inertia+up.mass*up.position.distance_squared_to(shoulder)+low.inertia+low.mass*low.position.distance_squared_to(shoulder)
  var inertia_elbow := low.inertia+low.mass*ARM_LOWER*ARM_LOWER*.25
- _motor(up,core,arm_goals[index].x,32,15,up.mass*110*P*P,gravity_shoulder,inertia_shoulder)
- _motor(low,up,arm_goals[index].y,44,17,low.mass*80*P*P,gravity_elbow,inertia_elbow)
+ _motor(up,core,arm_goals[index].x,48,13.5,up.mass*130*P*P,gravity_shoulder,inertia_shoulder)
+ _motor(low,up,arm_goals[index].y,62,15,low.mass*95*P*P,gravity_elbow,inertia_elbow)
  arm_load[index] = clampf(absf(requested.x-arm_goals[index].x)*.6+absf(arm_speeds[index].x)*.12,0,1)
  strike_cooldowns[index] = maxf(0,strike_cooldowns[index]-delta)
  var contact_hit := low.opponent_impulse

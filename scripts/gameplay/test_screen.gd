@@ -306,10 +306,10 @@ func _set_paused(value: bool,show_overlay: bool = true) -> void:
   _capture_simulation($WorldView/World/Range)
   for node in _participants():
    if not is_instance_valid(node): continue
-   if node is RigidBody2D:
+   if node.has_method("set_enabled"):
+    pause_states.append({"node":node,"enabled":node.enabled,"controller":true});node.set_enabled(false)
+   elif node is RigidBody2D:
     pause_states.append({"node":node,"enabled":not node.freeze});node.freeze = true
-   elif node.has_method("set_enabled"):
-    pause_states.append({"node":node,"enabled":node.enabled});node.set_enabled(false)
   for entry: Dictionary in paused_bodies:
    if is_instance_valid(entry.node): entry.node.freeze = true
   for entry: Dictionary in paused_processes:
@@ -317,7 +317,8 @@ func _set_paused(value: bool,show_overlay: bool = true) -> void:
  else:
   for entry: Dictionary in pause_states:
    if not is_instance_valid(entry.node): continue
-   if entry.node is RigidBody2D: entry.node.freeze = not bool(entry.enabled)
+   if entry.get("controller",false): entry.node.set_enabled(bool(entry.enabled))
+   elif entry.node is RigidBody2D: entry.node.freeze = not bool(entry.enabled)
    else: entry.node.set_enabled(bool(entry.enabled))
   for entry: Dictionary in paused_bodies:
    if is_instance_valid(entry.node): entry.node.freeze = entry.frozen

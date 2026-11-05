@@ -14,6 +14,9 @@ var page := 0
 var pages: Array[String] = []
 var serial := 0
 var page_fits: Callable
+var quiet_gap := 0.0
+const BETWEEN_CALLS := .65
+const MINIMUM_DWELL := 2.8
 func enqueue(speaker: String,text: String,priority: int = 0,id: String = "") -> bool:
  text = text.strip_edges()
  if text.is_empty(): return false
@@ -23,30 +26,38 @@ func enqueue(speaker: String,text: String,priority: int = 0,id: String = "") -> 
  if pending.size() >= LIMIT and priority == 0: return false
  seen[id] = true;serial += 1
  var message := {"id":id,"speaker":speaker,"full_body":text,"priority":priority,"sequence":serial}
- if not current.is_empty() and priority >= 2 and priority > int(current.priority):
-  pending.append(current);current = {}
  pending.append(message)
  pending.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return a.priority > b.priority if a.priority != b.priority else a.sequence < b.sequence)
- if current.is_empty(): _begin_next()
+ if current.is_empty() and quiet_gap <= 0: _begin_next()
  while pending.size() > LIMIT: pending.pop_back()
  state_changed.emit();return true
 func _begin_next() -> void:
  if pending.is_empty(): current = {};state_changed.emit();return
- current = pending.pop_front();pages = paginate_measured(str(current.full_body),page_fits) if page_fits.is_valid() else paginate(str(current.full_body),118);page = 0;_show_page()
+ current = pending.pop_front();pages = paginate_measured(str(current.full_body),page_fits) if page_fits.is_valid() else paginate(str(current.full_body),118)
+ page = clampi(int(current.get("resume_page",0)),0,pages.size()-1);_show_page()
+ elapsed = minf(float(current.get("resume_elapsed",0)),maxf(0,duration-1.0))
 func _show_page() -> void:
  current.body = pages[page];current.page = page+1;current.pages = pages.size();current.queued = pending.size()
  duration = clampf(float(pages[page].split(" ",false).size())/2.8+1.8,5.5,10.0);elapsed = 0
  message_started.emit(current.duplicate(true));state_changed.emit()
 func tick(delta: float) -> void:
- if paused or current.is_empty(): return
+ if paused: return
+ if current.is_empty():
+  quiet_gap = maxf(0,quiet_gap-maxf(0,delta))
+  if quiet_gap == 0 and not pending.is_empty(): _begin_next()
+  return
  elapsed += maxf(0,delta)
+ if not pending.is_empty() and elapsed >= MINIMUM_DWELL and int(pending[0].priority) >= 2 and int(pending[0].priority) > int(current.priority):
+  current.resume_page = page;current.resume_elapsed = elapsed;pending.append(current);current = {}
+  pending.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return a.priority > b.priority if a.priority != b.priority else a.sequence < b.sequence)
+  _begin_next();return
  if elapsed >= duration: advance()
 func advance() -> void:
  if current.is_empty(): _begin_next();return
  if page+1 < pages.size(): page += 1;_show_page();return
- var id := str(current.id);current = {};message_finished.emit(id);_begin_next()
+ var id := str(current.id);current = {};quiet_gap = BETWEEN_CALLS;message_finished.emit(id);state_changed.emit()
 func clear() -> void:
- current = {};pending.clear();pages.clear();elapsed = 0;state_changed.emit()
+ current = {};pending.clear();pages.clear();elapsed = 0;quiet_gap = 0;state_changed.emit()
 func fraction() -> float: return clampf(elapsed/maxf(duration,.01),0,1)
 static func paginate(text: String,limit: int) -> Array[String]:
  var output: Array[String] = [];var line := ""

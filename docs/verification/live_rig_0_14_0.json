@@ -1,0 +1,248 @@
+{
+  "version": "0.14.0-live-rig",
+  "engine": "Godot 4.7.2 stable",
+  "base_commit": "0ab26a6dba9dd9c18b87c35bcfd275e5e96bdeb3",
+  "suites": {
+    "nightfall": {
+      "passed": 68,
+      "failed": 0
+    },
+    "assets": {
+      "passed": 33,
+      "failed": 0
+    },
+    "prologue": {
+      "passed": 42,
+      "failed": 0
+    },
+    "physics": {
+      "passed": 35,
+      "failed": 0
+    },
+    "dynamic": {
+      "passed": 25,
+      "failed": 0
+    },
+    "readability": {
+      "passed": 22,
+      "failed": 0
+    },
+    "inertial_rig": {
+      "passed": 24,
+      "failed": 0
+    },
+    "actuator_pacing": {
+      "passed": 4,
+      "failed": 0
+    },
+    "radio_flow": {
+      "passed": 21,
+      "failed": 0
+    }
+  },
+  "total_passed": 274,
+  "real_physical_battle_seconds": 50.3666666666638,
+  "player_integrity_after_battle": 57.76,
+  "maximum_damage_minimum_seconds": 42.25,
+  "physical_rig": {
+    "rigid_bodies": 10,
+    "native_pin_joints": 9,
+    "mass_tons": 75,
+    "belly_native_impulse": 7500,
+    "belly_head_lag_radians": 0.03524350654334,
+    "belly_relative_head_speed": 76.9669723510742,
+    "uppercut_probe_mass": 7.5,
+    "uppercut_probe_velocity": 750,
+    "uppercut_actual_contact": true,
+    "jaw_lift_world_pixels": 109.970550537109,
+    "peak_head_relative_angle": 0.66077845916152,
+    "walking_foot_range_pixels": 187.32763671875,
+    "cleared_route_has_no_hidden_colliders": true
+  },
+  "actuator_pacing": {
+    "before_0_13_1": {
+      "early_83ms": 1.16564691066742,
+      "foot_span": 86.1612243652344,
+      "reach": "(171.0957, -178.4651)",
+      "run_5s": 900.935551404953,
+      "run_gait": 13.0752776874999,
+      "t80": 1.53333333333333,
+      "walk_5s": 612.650546550751,
+      "walk_gait": 13.7081250000001
+    },
+    "after_0_14_0": {
+      "early_83ms": 0.255636304616928,
+      "foot_span": 110.10470199585,
+      "reach": "(171.4554, -182.8151)",
+      "run_5s": 1088.86568117142,
+      "run_gait": 11.9504535833333,
+      "t80": 1.10833333333333,
+      "walk_5s": 697.825344085693,
+      "walk_gait": 12.79425
+    },
+    "attack_trajectory_time_reduction_percent": 27.71739130434788,
+    "foot_span_increase_percent": 27.78915667344748
+  },
+  "clean_source_reimport": {
+    "assets_passed": 33,
+    "ragdoll_passed": 24,
+    "radio_passed": 21,
+    "pacing_passed": 4,
+    "failed": 0
+  },
+  "isolated_android_pck": {
+    "runtime_failures": 0,
+    "source_project_folder_empty": true,
+    "pack_sha256": "dcfedd8069cf0df7fecfde80d7eaf3f0c19227b684d4f1b754f2862e6228dad1",
+    "apk_tested": false,
+    "physical_android_tested": false
+  },
+  "real_contact_capture_records": [
+    {
+      "camera_zoom": 0.70003354549408,
+      "contacts": 1,
+      "health": 528.0,
+      "id": "heavy_contact",
+      "maximum_strength": 1.0,
+      "size": "(1280, 720)"
+    },
+    {
+      "camera_zoom": 0.404689788818359,
+      "contacts": 4,
+      "health": 521.4375,
+      "id": "combat_framing",
+      "maximum_strength": 1.0,
+      "size": "(1024, 459)"
+    },
+    {
+      "camera_zoom": 0.425231873989105,
+      "contacts": 5,
+      "health": 512.123650512695,
+      "id": "contact_phone",
+      "maximum_strength": 1.0,
+      "size": "(1024, 459)"
+    },
+    {
+      "camera_zoom": 0.40673440694809,
+      "contacts": 5,
+      "health": 512.123650512695,
+      "id": "combat_phone",
+      "maximum_strength": 1.0,
+      "size": "(1024, 459)"
+    }
+  ],
+  "setup_capture_records": [
+    {
+      "body_angle": -0.109593085944653,
+      "body_count": 10,
+      "head_relative_angle": 0.0467187762260437,
+      "id": "enemy_stride",
+      "joint_count": 9,
+      "radio_fade": 0.0,
+      "setup": "gameplay",
+      "size": "(1280, 720)"
+    },
+    {
+      "body_angle": -0.0354517735540867,
+      "body_count": 10,
+      "head_relative_angle": -0.00263664498925209,
+      "id": "belly_inertia",
+      "joint_count": 9,
+      "radio_fade": 0.0,
+      "setup": "native 7500 belly impulse, no head force",
+      "size": "(1280, 720)"
+    },
+    {
+      "body_angle": -0.00797699578106403,
+      "body_count": 10,
+      "head_relative_angle": 0.393568949773908,
+      "id": "jaw_joint",
+      "joint_count": 9,
+      "radio_fade": 0.0,
+      "setup": "upward 7.5-ton native collision probe, no head animation",
+      "size": "(1280, 720)"
+    },
+    {
+      "body_angle": -0.711381912231445,
+      "body_count": 10,
+      "head_relative_angle": -0.182758510112762,
+      "id": "physical_ragdoll",
+      "joint_count": 9,
+      "radio_fade": 0.0,
+      "setup": "muscles disabled, gravity and nine native joints remain",
+      "size": "(1280, 720)"
+    },
+    {
+      "body_angle": -0.864723980426788,
+      "body_count": 10,
+      "head_relative_angle": -0.0866976976394653,
+      "id": "ragdoll_recovery",
+      "joint_count": 9,
+      "radio_fade": 0.0,
+      "setup": "same physical bodies with balance recovery",
+      "size": "(1280, 720)"
+    },
+    {
+      "body_angle": -0.0139295402914286,
+      "body_count": 10,
+      "head_relative_angle": 0.00192350894212723,
+      "id": "player_foreground",
+      "joint_count": 9,
+      "radio_fade": 0.0,
+      "setup": "gameplay",
+      "size": "(1280, 720)"
+    },
+    {
+      "body_angle": -0.0141928242519498,
+      "body_count": 10,
+      "head_relative_angle": -0.00553301069885492,
+      "id": "radio_combat_phone",
+      "joint_count": 9,
+      "radio_fade": 0.0,
+      "setup": "gameplay",
+      "size": "(1024, 459)"
+    },
+    {
+      "body_angle": -0.014230745844543,
+      "body_count": 10,
+      "head_relative_angle": -0.00610518362373114,
+      "id": "radio_fade_phone",
+      "joint_count": 9,
+      "radio_fade": 0.376378571428566,
+      "setup": "gameplay",
+      "size": "(1024, 459)"
+    },
+    {
+      "body_angle": -0.0142978793010116,
+      "body_count": 10,
+      "head_relative_angle": -0.00634935963898897,
+      "id": "radio_expanded_phone",
+      "joint_count": 9,
+      "radio_fade": 1.0,
+      "setup": "gameplay",
+      "size": "(1024, 459)"
+    },
+    {
+      "body_angle": -0.0142982015386224,
+      "body_count": 10,
+      "head_relative_angle": -0.00553494039922953,
+      "id": "radio_expanded",
+      "joint_count": 9,
+      "radio_fade": 1.0,
+      "setup": "gameplay",
+      "size": "(1280, 720)"
+    }
+  ],
+  "captures": {
+    "combat_phone.png": "eb02d2973674872a6b18fea484e3bedc5d8081f27965b337261ebdc6a8a424f8",
+    "contact_phone.png": "9fc8470250c704b49db5011edc9bcef4f5e1385753238b55dc184facd5f5a1af",
+    "enemy_stride.png": "719ac84eecf4ef65da64ebea978347ae70f8ad0d188154ad3aba5fb7d081ddf1",
+    "heavy_contact.png": "9e8d89ac8f688a86fd4b25355d21c6379fd44ff870421cefed0ff799ccf4c580",
+    "jaw_joint.png": "fec307525713b9df45b81488dcc2140dc6205f091611c273629c122532628c8c",
+    "physical_ragdoll.png": "c8de26482f070a5ef50f2eeace7f1fb8b88e45f3424c56ab6d9aeaa9eeab689d",
+    "player_foreground.png": "92ce09fd23023d33edcd9039b2873837f7dc306af52e7bd9b682a21c9f31fb1e",
+    "radio_combat_phone.png": "993318a8998554ccbe6917d97a2a65b3adeea848ca49e2bb5200a1d8819c1d58",
+    "radio_expanded_phone.png": "a70e6fb49dd7378270ed2d5411a37af4024e4dca6c0df7e62fb7c3355cb92b9c",
+    "radio_fade_phone.png": "41965ef533e60e53a84ee3090849b31581e81a5955e28deafc784fcad2ca9d0b"
+  }
+}

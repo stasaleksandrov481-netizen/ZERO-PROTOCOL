@@ -120,7 +120,7 @@ func _focus_screen(screen: Variant) -> void:
 		screen.call("focus_initial")
 
 func _range_failed(details: Dictionary, errors: Array[Dictionary]) -> void:
-	var report := {"patch":"RIFT-0.13.1","engine":Engine.get_version_info()["string"],
+	var report := {"patch":"RIFT-0.14.0","engine":Engine.get_version_info()["string"],
 		"platform":OS.get_name(),"startup":details,"errors":errors}
 	var log_file := FileAccess.open("user://at01_startup_report.json",FileAccess.WRITE)
 	if log_file != null:
@@ -138,7 +138,7 @@ func _range_failed(details: Dictionary, errors: Array[Dictionary]) -> void:
 	if not selected.is_empty():
 		message += "\n\n%s:%d\n%s" % [str(selected["file"]).trim_prefix("res://"),
 			int(selected["line"]),str(selected["message"]).left(360)]
-	message += "\n\nПатч RIFT-0.13.1 · Godot %s" % Engine.get_version_info()["string"]
+	message += "\n\nПатч RIFT-0.14.0 · Godot %s" % Engine.get_version_info()["string"]
 	transitioning = false
 	current_route = &""
 	await go(&"home")

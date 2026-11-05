@@ -132,13 +132,12 @@ func layout_hud() -> void:
  enemy_health_trail.position = enemy_health.position;enemy_health_trail.size = enemy_health.size
  # Active calls replace the right diagnostic card, leaving both fighters visible.
  radio.position = Vector2(size.x-442,85);radio.size = Vector2(420,194);radio.visible = mission
- radio.idle_button.position = Vector2(224,0);radio.idle_button.size = Vector2(196,44)
  if not mission: title.text = "ПОЛИГОН / АТ-01";$Objectives.hide()
  if is_instance_valid(modal_panel): modal_panel.custom_minimum_size.x = minf(650,size.x-64)
  if is_instance_valid(order_panel): order_panel.position = Vector2(size.x*.5-125,size.y-270)
 func _process(delta: float) -> void:
  dispatcher.paused = paused or overlay != "";dispatcher.tick(delta);frame_clock += delta
- if is_instance_valid(radio.idle_button): radio.idle_button.position = Vector2(radio.size.x-196,0);radio.idle_button.size = Vector2(196,44)
+ radio.set_combat_mode(is_instance_valid(enemy) and enemy.enabled and enemy.state != "dead")
  if is_instance_valid(actor):
   $LeftStick.drive_load = actor.arm_load[0];$RightStick.drive_load = actor.arm_load[1]
   $LeftStick.queue_redraw();$RightStick.queue_redraw()
@@ -203,7 +202,7 @@ func _draw() -> void:
    var y := diag_y+40+i*(15.0 if compact else 22.0)
    draw_circle(Vector2(40,y-4),3,Color("80b7c5"));draw_string(UI.FONT,Vector2(52,y),labels[i],HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("96afb9"))
    draw_string(UI.MONO,Vector2(167,y),values[i],HORIZONTAL_ALIGNMENT_LEFT,-1,11,(Color("a5d3ab") if mobility == "НОРМА" else Color("d7b167")) if i == 3 else UI.TEXT)
-  if not radio.active or radio.collapsed: _hull_diagram(Rect2(w-223,143,201,122 if compact else 162))
+  if not radio.obscures_diagnostics(): _hull_diagram(Rect2(w-223,172,201,122 if compact else 162))
  draw_polyline(PackedVector2Array([Vector2(0,size.y-42),Vector2(35,size.y-42),Vector2(49,size.y-22),Vector2(293,size.y-22),Vector2(308,size.y-37)]),Color(.38,.63,.73,.35),1,true)
  draw_polyline(PackedVector2Array([Vector2(w,size.y-42),Vector2(w-35,size.y-42),Vector2(w-49,size.y-22),Vector2(w-293,size.y-22),Vector2(w-308,size.y-37)]),Color(.38,.63,.73,.35),1,true)
 func _hull_diagram(rect: Rect2) -> void:
