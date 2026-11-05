@@ -39,10 +39,11 @@ func _refresh() -> void:
  if not is_instance_valid(body): return
  if phase == 0:
   caption.text = "01 / ПРОВЕРЬТЕ ОБЕ РУКИ"
-  body.text = "%s Левая   %s Правая\nСдвиньте каждый стик. На ПК — ЛКМ / ПКМ."%["✓" if hands[0] else "○","✓" if hands[1] else "○"]
+  var action := "Отведите стик и вынесите вперёд. Вверх — удар снизу." if OS.has_feature("android") else "Стики или ЛКМ / ПКМ. Отведите руку и вынесите вперёд."
+  body.text = "%s Левая   %s Правая\n%s"%["✓" if hands[0] else "○","✓" if hands[1] else "○",action]
  elif phase == 1:
   caption.text = "02 / СДЕЛАЙТЕ ПЕРВЫЕ ШАГИ"
-  body.text = "Стрелки внизу или A / D — ходьба.\nНа телефоне: двойной тап с удержанием сбоку."
+  body.text = "ШАГ или двойной тап с удержанием сбоку.\nБЕГ — длинный тяжёлый шаг." if OS.has_feature("android") else "Кнопки ШАГ или A / D — ходьба.\nShift — тяжёлый бег."
  else:
   caption.text = "ПРОВЕРКА ЗАВЕРШЕНА"
   body.text = "Приводы отвечают. Держитесь огней справа.\nКедр и диспетчер остаются с вами."

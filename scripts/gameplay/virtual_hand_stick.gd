@@ -13,11 +13,20 @@ var radius := 65.0
 var origin := Vector2.ZERO
 var active := true
 var drive_load := 0.0
+var contact_flash := 0.0
+
+func show_contact(strength: float) -> void:
+ contact_flash = maxf(contact_flash,clampf(strength,0,1));set_process(true);queue_redraw()
+func _process(delta: float) -> void:
+ contact_flash = move_toward(contact_flash,0,delta*3.8)
+ queue_redraw()
+ if contact_flash == 0: set_process(false)
 
 func _ready() -> void:
  mouse_filter = Control.MOUSE_FILTER_IGNORE
  resized.connect(_layout)
  _layout()
+ set_process(false)
 
 func _layout() -> void:
  origin = Vector2(roundf(size.x*.5),roundf((size.y-30)*.5))
@@ -88,6 +97,10 @@ func _draw() -> void:
  draw_circle(knob,radius*.25,Color(.075,.115,.14,.75 if held else .42))
  draw_arc(knob,radius*.25,0,TAU,64,Color(color,.92),2,true)
  draw_circle(knob,3,Color(color,.75))
+ if contact_flash > 0:
+  var reduced := bool(SettingsManager.get_value("video/reduced_motion"))
+  draw_arc(origin,radius+(0 if reduced else (1-contact_flash)*5),-.7,.7,24,Color(.94,.74,.39,contact_flash*.90),3,true)
+  draw_arc(knob,radius*.25,0,TAU,48,Color(.97,.82,.53,contact_flash),2.5,true)
  var y := size.y-28.0
  var plate := PackedVector2Array([Vector2(43,y),Vector2(size.x-43,y),Vector2(size.x-34,y+12),Vector2(size.x-43,y+24),Vector2(43,y+24),Vector2(34,y+12),Vector2(43,y)])
  draw_colored_polygon(plate,Color(.02,.05,.07,.7));draw_polyline(plate,Color("a38a54"),1,true)

@@ -1,0 +1,84 @@
+{
+  "version": "0.13.1-contact-polish",
+  "engine": "Godot 4.7.2 stable",
+  "base_commit": "2a074a6921819b9455eadc98c911f90ca39c9d72",
+  "suites": {
+    "nightfall": {
+      "passed": 68,
+      "failed": 0
+    },
+    "assets": {
+      "passed": 33,
+      "failed": 0
+    },
+    "prologue": {
+      "passed": 42,
+      "failed": 0
+    },
+    "physics": {
+      "passed": 35,
+      "failed": 0
+    },
+    "dynamic": {
+      "passed": 25,
+      "failed": 0
+    },
+    "readability": {
+      "passed": 22,
+      "failed": 0
+    }
+  },
+  "total_passed": 225,
+  "real_physical_battle_seconds": 53.7,
+  "maximum_damage_minimum_seconds": 42.25,
+  "clean_source_readability": {
+    "passed": 22,
+    "failed": 0
+  },
+  "isolated_android_pck": {
+    "runtime_failures": 0,
+    "source_project_folder_empty": true,
+    "apk_tested": false,
+    "physical_android_tested": false
+  },
+  "real_contact_capture_records": [
+    {
+      "camera_zoom": 0.730318427085876,
+      "contacts": 0,
+      "health": 540.0,
+      "id": "combat_framing",
+      "maximum_strength": 0.0,
+      "size": "(1280, 720)"
+    },
+    {
+      "camera_zoom": 0.727045118808746,
+      "contacts": 1,
+      "health": 528.0,
+      "id": "heavy_contact",
+      "maximum_strength": 0.626333312988281,
+      "size": "(1280, 720)"
+    },
+    {
+      "camera_zoom": 0.404197216033936,
+      "contacts": 3,
+      "health": 515.916666666667,
+      "id": "contact_phone",
+      "maximum_strength": 1.0,
+      "size": "(1024, 459)"
+    },
+    {
+      "camera_zoom": 0.376104563474655,
+      "contacts": 3,
+      "health": 515.916666666667,
+      "id": "combat_phone",
+      "maximum_strength": 1.0,
+      "size": "(1024, 459)"
+    }
+  ],
+  "captures": {
+    "combat_framing.png": "c54217085e6e5dad7d42fedcd6686fd075bc428e083f431e224ef7bbfd23a5da",
+    "combat_phone.png": "0d971f45543e058fb346644a3d013c754d3d32e0dee90a0bde4031a967141784",
+    "contact_phone.png": "95e31c2fcbce6e1eb7ade550dd0750c8f84167b933ac2047f67d625242c473e3",
+    "heavy_contact.png": "0d499d2df0f775b80fc9a1eb69aedf827ba015a7327279f0fd3efd12b3474aa9"
+  }
+}

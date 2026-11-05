@@ -15,6 +15,7 @@ const SHOULDER_MAX := 1.65
 signal overload(point: Vector2,strength: float)
 signal impact(point: Vector2,strength: float,direction: Vector2,target: PhysicsBody2D)
 signal strike(point: Vector2,strength: float)
+signal arm_hit(index: int,strength: float)
 signal footstep(strength: float)
 signal planted(point: Vector2,strength: float)
 signal balance_changed(state: String)
@@ -236,6 +237,7 @@ func _arm(index: int,delta: float) -> void:
  var new_impact := not hand_contacts[index] or contact_hit > last_impulses[index]*1.8
  if contact_hit > 4*P and new_impact and strike_cooldowns[index] == 0:
   var strength := clampf(contact_hit/(50*P),.15,1)
+  arm_hit.emit(index,strength)
   strike.emit(low.opponent_contact,strength)
   if is_instance_valid(low.opponent_body): impact.emit(low.opponent_contact,strength,low.linear_velocity.normalized(),low.opponent_body)
   strike_cooldowns[index] = .24

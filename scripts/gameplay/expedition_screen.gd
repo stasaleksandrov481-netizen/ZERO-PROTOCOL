@@ -80,6 +80,22 @@ func _update_camera(delta: float,snap: bool = false) -> void:
  super._update_camera(delta,snap)
  if landing:
   camera.position.y = -610;camera.force_update_scroll()
+func _camera_subjects() -> PackedFloat32Array:
+ if landing or not is_instance_valid(enemy) or not enemy.enabled or enemy.state == "dead": return PackedFloat32Array()
+ if absf(enemy.position.x-robot.core.position.x) > 1600: return PackedFloat32Array()
+ var subjects := PackedFloat32Array([robot.core.position.x,enemy.position.x-90])
+ if is_instance_valid(companion) and absf(companion.core.position.x-robot.core.position.x) < 750:
+  subjects.append(companion.core.position.x)
+ return subjects
+func _camera_top_y() -> float:
+ var top := _head_top(robot)
+ if is_instance_valid(companion) and absf(companion.core.position.x-robot.core.position.x) < 750: top = minf(top,_head_top(companion))
+ if is_instance_valid(enemy):
+  for binding: Dictionary in enemy.collider_bindings:
+   var collision: CollisionShape2D = binding.collision
+   if int(collision.get_meta("part",-1)) != 1: continue
+   for point: Vector2 in collision.shape.points: top = minf(top,(collision.global_transform*point).y)
+ return top
 func _mission_layout() -> void: $HUD.layout_hud()
 func _physics_process(delta: float) -> void:
  super._physics_process(delta)

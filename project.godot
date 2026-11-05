@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 config/name="RIFT: ZERO PROTOCOL"
-config/version="0.13.0-impact-mass"
+config/version="0.13.1-contact-polish"
 run/main_scene="res://scenes/boot/boot.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://assets/icons/app_icon.svg"

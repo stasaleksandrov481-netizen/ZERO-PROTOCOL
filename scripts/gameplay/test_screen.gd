@@ -29,6 +29,7 @@ const CAMERA_MIN := .45
 const CAMERA_MAX := 1.12
 const PLAYER_SCREEN_X := .41
 var target_zoom := CAMERA_ZOOM
+var framing_ratio := 1.0
 var free_touches: Dictionary = {}
 var pinch_distance := 0.0
 var pinch_zoom := CAMERA_ZOOM
@@ -100,6 +101,7 @@ func _ready() -> void:
  $WorldView/World/Range.add_child(hit_feedback)
  robot.impact.connect(func(point: Vector2,strength: float,direction: Vector2,_target: PhysicsBody2D) -> void:
   hit_feedback.hit(point,strength,direction))
+ robot.arm_hit.connect($HUD.hand_contact)
  _apply_quality()
  AudioManager.set_test_active(true)
  if OS.has_feature("android"):
@@ -164,18 +166,48 @@ func set_camera_zoom(value: float) -> void:
  $HUD/Zoom/Reset.text = "%d%%" % roundi(target_zoom/CAMERA_ZOOM*100)
 
 func _update_camera(delta: float,snap: bool = false) -> void:
+ if paused and not snap: return
  var blend := 1.0 if snap else 1.0-exp(-delta*11.0)
  var view_size := Vector2(arena_view.size)
  var screen_factor := clampf(view_size.y/720.0,.5,2.0)
- var zoom_value := lerpf(camera.zoom.x,target_zoom*screen_factor,blend)
+ var reduced := bool(SettingsManager.get_value("video/reduced_motion"))
+ var subjects: PackedFloat32Array = _camera_subjects() if not reduced else PackedFloat32Array()
+ var desired_ratio := 1.0
+ var left := 0.0;var right := 0.0
+ if subjects.size() >= 2:
+  left = subjects[0];right = subjects[0]
+  for subject: float in subjects: left = minf(left,subject);right = maxf(right,subject)
+  var fit_zoom := view_size.x*.66/maxf(340,right-left+340)/screen_factor
+  var ui_scale := view_size.x/maxf(1,size.x)
+  var vertical_fit := (view_size.y*.80-140*ui_scale)/maxf(340,-_camera_top_y()+24)/screen_factor
+  fit_zoom = minf(fit_zoom,vertical_fit)
+  desired_ratio = clampf(fit_zoom/target_zoom,CAMERA_MIN/target_zoom,1)
+ if snap or reduced: framing_ratio = desired_ratio
+ else: framing_ratio = lerpf(framing_ratio,desired_ratio,1-exp(-delta*(3.5 if desired_ratio < framing_ratio else 1.4)))
+ var recoil_zoom: float = hit_feedback.framing_pullback() if is_instance_valid(hit_feedback) else 0.0
+ var zoom_goal := maxf(CAMERA_MIN,target_zoom*framing_ratio*(1-recoil_zoom))*screen_factor
+ var zoom_value := lerpf(camera.zoom.x,zoom_goal,blend)
  camera.zoom = Vector2.ONE*zoom_value
  var x: float = 0.0 if robot.reset_cooldown > 0 else robot.core.position.x
  var goal := Vector2(x+view_size.x*(.5-PLAYER_SCREEN_X)/zoom_value,-view_size.y*.30/zoom_value)
+ if subjects.size() >= 2:
+  var min_center := right+170-view_size.x*.33/zoom_value
+  var max_center := left-170+view_size.x*.33/zoom_value
+  goal.x = clampf(goal.x,min_center,max_center) if min_center <= max_center else (left+right)*.5
  # At close inspection zoom, keep the cockpit in frame rather than centering the floor.
  var close := clampf((zoom_value/screen_factor-.88)/.24,0,1)
  goal.y = lerpf(goal.y,robot.core.position.y+1.1*64.0,close)
  camera.position = goal if snap else camera.position.lerp(goal,blend)
  camera.force_update_scroll()
+ $HUD/Zoom/Reset.text = "%d%%" % roundi(zoom_value/screen_factor/CAMERA_ZOOM*100)
+
+func _camera_subjects() -> PackedFloat32Array: return PackedFloat32Array()
+func _camera_top_y() -> float: return _head_top(robot)
+func _head_top(actor: Node2D) -> float:
+ var collision: CollisionShape2D = actor.parts.Head.get_node("Collision")
+ var top: float = collision.global_position.y
+ for point: Vector2 in collision.shape.points: top = minf(top,(collision.global_transform*point).y)
+ return top
 
 func _pinch_update() -> void:
  if free_touches.size() < 2: return

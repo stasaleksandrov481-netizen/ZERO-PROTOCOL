@@ -14,6 +14,12 @@ var enemy: Node2D
 var run_button: Button
 var enemy_intent: Label
 var enemy_health: ProgressBar
+var enemy_health_trail: ProgressBar
+var observed_enemy: Node2D
+var previous_enemy_health := 0.0
+var trail_health := 0.0
+var trail_hold := 0.0
+var enemy_contact_flash := 0.0
 var mission := false
 var paused := false
 var overlay := ""
@@ -77,9 +83,15 @@ func _ready() -> void:
  left_walk.tooltip_text = "Шаг влево / удерживать";right_walk.tooltip_text = "Шаг вправо / удерживать"
  left_walk.hold_changed.connect(func(value: bool) -> void: left_held = value;_movement())
  right_walk.hold_changed.connect(func(value: bool) -> void: right_held = value;_movement())
- run_button = preload("res://scripts/ui/run_toggle.gd").new();run_button.text = "БЕГ";run_button.pressed.connect(func() -> void: AudioManager.play_ui());run_button.add_theme_font_size_override("font_size",13);run_button.tooltip_text = "Бег / Shift. При падении: встать / R.";add_child(run_button)
+ run_button = preload("res://scripts/ui/run_toggle.gd").new();run_button.text = "БЕГ";run_button.pressed.connect(func() -> void: AudioManager.play_ui());run_button.add_theme_font_size_override("font_size",13);run_button.tooltip_text = "Включить тяжёлый бег. На земле — начать подъём." if OS.has_feature("android") else "Бег / Shift. При падении: встать / R.";add_child(run_button)
  enemy_intent = UI.label("",13,UI.RED);enemy_intent.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER;add_child(enemy_intent);enemy_intent.hide()
+ enemy_health_trail = ProgressBar.new();enemy_health_trail.show_percentage = false;add_child(enemy_health_trail);enemy_health_trail.hide()
  enemy_health = ProgressBar.new();enemy_health.show_percentage = false;enemy_health.custom_minimum_size.y = 4;add_child(enemy_health);enemy_health.hide()
+ var bar_background := StyleBoxFlat.new();bar_background.bg_color = Color(.05,.10,.12,.85)
+ var bar_trail := StyleBoxFlat.new();bar_trail.bg_color = Color("a9654c")
+ var bar_fill := StyleBoxFlat.new();bar_fill.bg_color = Color("d9b36a")
+ enemy_health_trail.add_theme_stylebox_override("background",bar_background);enemy_health_trail.add_theme_stylebox_override("fill",bar_trail)
+ enemy_health.add_theme_stylebox_override("background",StyleBoxEmpty.new());enemy_health.add_theme_stylebox_override("fill",bar_fill)
  radio = RadioView.new();radio.name = "Radio";add_child(radio);radio.bind(dispatcher);radio.history_requested.connect(func() -> void: history_requested())
  dispatcher.message_started.connect(func(message: Dictionary) -> void:
   if str(message.id) != last_radio_id: last_radio_id = str(message.id);AudioManager.play_radio())
@@ -117,6 +129,7 @@ func layout_hud() -> void:
  var enemy_card := _enemy_card()
  enemy_intent.position = enemy_card.position+Vector2(8,4);enemy_intent.size = Vector2(enemy_card.size.x-16,26)
  enemy_health.position = enemy_card.position+Vector2(44,34);enemy_health.size = Vector2(enemy_card.size.x-88,5)
+ enemy_health_trail.position = enemy_health.position;enemy_health_trail.size = enemy_health.size
  # Active calls replace the right diagnostic card, leaving both fighters visible.
  radio.position = Vector2(size.x-442,85);radio.size = Vector2(420,194);radio.visible = mission
  radio.idle_button.position = Vector2(224,0);radio.idle_button.size = Vector2(196,44)
@@ -132,9 +145,20 @@ func _process(delta: float) -> void:
   run_button.text = ("ВСТАТЬ" if OS.has_feature("android") else "ВСТАТЬ / R") if actor.fallen else ("БЕГ ВКЛ." if run_button.button_pressed else ("БЕГ" if OS.has_feature("android") else "БЕГ / SHIFT"))
   run_button.visible = not interact.visible and overlay == ""
  if is_instance_valid(enemy):
-  enemy_intent.visible = enemy.enabled and enemy.state != "dead";enemy_health.visible = enemy_intent.visible
+  enemy_intent.visible = enemy.enabled and enemy.state != "dead";enemy_health.visible = enemy_intent.visible;enemy_health_trail.visible = enemy_intent.visible
   enemy_intent.text = str(enemy.telegraph) if not str(enemy.telegraph).is_empty() else "КЛЫК / БРОНЯ И ЦЕЛОСТНОСТЬ"
+  if observed_enemy != enemy:
+   observed_enemy = enemy;previous_enemy_health = enemy.health;trail_health = enemy.health;trail_hold = 0
+  if enemy.health < previous_enemy_health:
+   trail_health = maxf(trail_health,previous_enemy_health);trail_hold = .16;enemy_contact_flash = .32
+  trail_hold = maxf(0,trail_hold-delta);enemy_contact_flash = maxf(0,enemy_contact_flash-delta)
+  if bool(SettingsManager.get_value("video/reduced_motion")): trail_health = enemy.health
+  elif trail_hold == 0: trail_health = move_toward(trail_health,enemy.health,enemy.MAX_HEALTH*delta*.8)
+  enemy_intent.modulate = Color("f5db9d") if enemy_contact_flash > 0 else Color.WHITE
   enemy_health.max_value = enemy.MAX_HEALTH;enemy_health.value = enemy.health
+  enemy_health_trail.max_value = enemy.MAX_HEALTH;enemy_health_trail.value = maxf(trail_health,enemy.health);previous_enemy_health = enemy.health
+ else:
+  observed_enemy = null;enemy_intent.hide();enemy_health.hide();enemy_health_trail.hide()
  if mission and objective.text != last_objective:
   last_objective = objective.text
   if is_instance_valid(objective_tween): objective_tween.kill()
@@ -142,6 +166,9 @@ func _process(delta: float) -> void:
    objective.modulate.a = .35;objective_tween = create_tween();objective_tween.tween_property(objective,"modulate:a",1.0,.38)
   else: objective.modulate.a = 1
  queue_redraw()
+func hand_contact(index: int,strength: float) -> void:
+ var stick: Control = $LeftStick if index == 0 else $RightStick
+ stick.show_contact(strength)
 func _plate(rect: Rect2,alpha: float = .76,accent: bool = false) -> void:
  var p := PackedVector2Array([rect.position+Vector2(11,0),rect.position+Vector2(rect.size.x,0),rect.end-Vector2(0,11),rect.end-Vector2(11,0),rect.position+Vector2(0,rect.size.y),rect.position+Vector2(0,11)])
  draw_colored_polygon(p,Color(.015,.042,.061,alpha));p.append(p[0]);draw_polyline(p,Color(.46,.67,.76,.55),1,true)
@@ -243,7 +270,9 @@ func show_pause() -> void:
  var content := _modal("pause")
  content.add_child(UI.micro("ОПЛОТ / ЛОКАЛЬНЫЙ КОНТУР"));content.add_child(UI.heading("ПАУЗА",38))
  content.add_child(UI.paragraph(title.text,16))
- if mission: content.add_child(UI.paragraph("Руки: отведите стик назад и вынесите вперёд. Вверх — удар снизу.\nШаг: стрелки / A, D. Бег: кнопка «БЕГ» / Shift. Встать: R.\nКедр: групповой канал. Важные сведения: журнал связи.",14,UI.CYAN))
+ if mission:
+  var movement := "Шаг: кнопки внизу или двойной тап с удержанием сбоку.\nБег и подъём: кнопка «БЕГ / ВСТАТЬ»." if OS.has_feature("android") else "Шаг: кнопки / A, D. Бег: кнопка «БЕГ» / Shift. Встать: R."
+  content.add_child(UI.paragraph("Руки: отведите стик назад и вынесите вперёд. Вверх — удар снизу.\n"+movement+"\nКедр: групповой канал. Важные сведения: журнал связи.",14,UI.CYAN))
  content.add_child(UI.primary("ПРОДОЛЖИТЬ",func() -> void: resume_requested.emit()))
  var row := UI.row(10);content.add_child(row)
  row.add_child(UI.button("КОНТРОЛЬНАЯ ТОЧКА" if mission else "СБРОС ПОЛИГОНА",func() -> void: restart_requested.emit()))
